@@ -1,0 +1,6 @@
+PyPDF2
+python-dotenv
+requests
+pandas
+bs4
+PyGithub
