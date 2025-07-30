@@ -1,33 +1,31 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
 
 export async function UserSeeder(prisma: PrismaClient) {
   console.log("Seeding users...");
 
+  const hashedPassword = await bcrypt.hash("password", 10);
+
   await prisma.users.createMany({
+    skipDuplicates: true,
     data: [
       {
-        namaLengkap: "Sabil Ahmad Hidayat",
+        nama_lengkap: "Sabil Ahmad Hidayat",
         email: "sabilahmad@gmail.com",
-        password: "password",
+        password: hashedPassword,
         role: "admin",
-        createdAt: new Date(),
-        updatedAt: new Date(),
       },
       {
-        namaLengkap: "Abdul Rahem Faqih",
+        nama_lengkap: "Abdul Rahem Faqih",
         email: "abdulrahem@gmail.com",
-        password: "password",
+        password: hashedPassword,
         role: "user",
-        createdAt: new Date(),
-        updatedAt: new Date(),
       },
       {
-        namaLengkap: "Mocahmmad Hanafi",
+        nama_lengkap: "Mocahmmad Hanafi",
         email: "mochammadhanafi@gmail.com",
-        password: "password",
+        password: hashedPassword,
         role: "admin",
-        createdAt: new Date(),
-        updatedAt: new Date(),
       },
     ],
   });

@@ -15,220 +15,219 @@ datasource db {
 }
 
 model WaktuKejadian {
-  id               String        @id @default(uuid())
-  waktuKejadian    String
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                String   @id @default(uuid())
+  waktu_kejadian    String
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
 
   @@map("waktu_kejadian")
 }
 
 model Terdakwa {
-  id            String        @id @default(uuid())
-  namaLengkap   String
-  jenisKelamin  String
-  alamat        String
-  tempatLahir   String
-  pekerjaan     String?
-  umur          Int?
-  kebangsaan    String?
-  agama         String?
-  putusanDetail PutusanDetail[] 
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id             String           @id @default(uuid())
+  nama_lengkap   String
+  jenis_kelamin  String
+  alamat         String
+  tempat_lahir   String
+  pekerjaan      String?
+  umur           Int?
+  kebangsaan     String?
+  agama          String?
+  putusan_detail PutusanDetail[] 
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @updatedAt
 
-  @@index([namaLengkap])
+  @@index([nama_lengkap])
   @@map("terdakwa")
 }
 
 model Putusan {
-  id                  String        @id @default(uuid())
-  nomorPutusan        String        @unique
-  uriDokumen          String?
-  judulPutusan        String
-  tahun               Int
-  lembagaPeradilan    String
-  panitera            String?
-  penuntutUmum        String?
-  jenisKejahatan      String?
-  alamatKejadian      String?
-  lokasiKejadianId    String?
-  lokasiKejadian      LokasiKejadian? @relation(fields: [lokasiKejadianId], references: [id])
-  hakim               Hakim[]
-  putusanDetail       PutusanDetail[]
-  logHistory          LogHistory[]
-  tanggalUpload       DateTime?
-  tanggalMusyawarah   DateTime?
-  tanggalDibacakan    DateTime?
-  VonisHukuman        String?
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
+  id                   String           @id @default(uuid())
+  nomor_putusan        String           @unique
+  uri_dokumen          String?
+  judul_putusan        String
+  tahun                Int
+  lembaga_peradilan    String
+  panitera             String?
+  jenis_kejahatan      String?
+  alamat_kejadian      String?
+  status_tahanan       String?
+  lama_tahanan         String?
+  barang_bukti         String?
+  lokasi_kejadian_id   String?
+  lokasi_kejadian      LokasiKejadian?  @relation(fields: [lokasi_kejadian_id], references: [id])
+  hakim                Hakim[]
+  putusan_detail       PutusanDetail[]
+  log_history          LogHistory[]
+  tanggal_upload       DateTime?
+  tanggal_musyawarah   DateTime?
+  tanggal_dibacakan    DateTime?
+  vonis_hukuman        String?
+  created_at           DateTime         @default(now())
+  updated_at           DateTime         @updatedAt
 
-  @@index([nomorPutusan])
-  @@index([lokasiKejadianId])
+  @@index([nomor_putusan])
+  @@index([lokasi_kejadian_id])
   @@map("putusan")
 }
 
 model PutusanDetail {
-  id                String          @id @default(uuid())
-  nomorPutusan      String
-  terdakwaId        String?
-  penasihatId       String?
-  hakimId           String?
-  putusan           Putusan?        @relation(fields: [nomorPutusan], references: [nomorPutusan])
-  terdakwa          Terdakwa?       @relation(fields: [terdakwaId], references: [id])
-  penasihat         Penasihat?      @relation(fields: [penasihatId], references: [id])
-  hakim             Hakim?          @relation(fields: [hakimId], references: [id])
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  id                String        @id @default(uuid())
+  nomor_putusan     String
+  terdakwa_id       String?
+  penasihat_id      String?
+  hakim_id          String?
+  penuntut_umum_id  String?       
+  putusan           Putusan?      @relation(fields: [nomor_putusan], references: [nomor_putusan])
+  terdakwa          Terdakwa?     @relation(fields: [terdakwa_id], references: [id])
+  penasihat         Penasihat?    @relation(fields: [penasihat_id], references: [id])
+  hakim             Hakim?        @relation(fields: [hakim_id], references: [id])
+  penuntut_umum     PenuntutUmum? @relation(fields: [penuntut_umum_id], references: [id])
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
 
   @@map("putusan_detail")
 }
 
+model PenuntutUmum {
+  id              String        @id @default(uuid())
+  nama_penuntut   String
+  putusan_detail  PutusanDetail[]
+  created_at      DateTime      @default(now())
+  updated_at      DateTime      @updatedAt
+
+  @@map("penuntut_umum")
+}
+
 model Penasihat {
-  id            String        @id @default(uuid())
-  namaPenasihat  String
-  putusanDetail PutusanDetail[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id               String           @id @default(uuid())
+  nama_penasihat   String
+  putusan_detail   PutusanDetail[]
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
 
   @@map("penasihat")
 }
 
 model Hakim {
-  id            String        @id @default(uuid())
-  namaHakim     String
-  jabatan       String
-  tahun         Int?
-  putusan       Putusan[]
-  putusanDetail PutusanDetail[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id             String           @id @default(uuid())
+  nama_hakim     String
+  jabatan        String
+  putusan        Putusan[]
+  putusan_detail PutusanDetail[]
+  created_at     DateTime         @default(now())
+  updated_at     DateTime         @updatedAt
 
   @@map("hakim")
 }
 
 model Users {
-  id          String        @id @default(uuid())
-  namaLengkap String
-  email       String        @unique
-  password    String
-  role        String        @default("user")
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  sesiChat    SesiChat[]
-  logHistory  LogHistory[]
+  id           String        @id @default(uuid())
+  nama_lengkap String
+  email        String        @unique
+  password     String
+  role         String        @default("user")
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  sesi_chat    SesiChat[]
+  log_history  LogHistory[]
 
   @@map("users")
 }
 
 model LokasiKejadian {
-  id              String        @id @default(uuid())
-  namaLokasi      String
-  kabupatenId     String?
-  kabupaten       Kabupaten?    @relation(fields: [kabupatenId], references: [id])
-  putusan         Putusan[]
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  id               String           @id @default(uuid())
+  nama_lokasi      String
+  putusan          Putusan[]
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
 
   @@map("lokasi_kejadian")
 }
 
 model Provinsi {
-  id            String        @id @default(uuid())
-  kodeProvinsi  String
-  namaProvinsi  String
-  kabupaten     Kabupaten[]
-  lang          String?
-  lat           String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id             String        @id @default(uuid())
+  kode_provinsi  String        @unique
+  nama_provinsi  String
+  kabupaten      Kabupaten[]
+  lang           Float?
+  lat            Float?
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
 
-  @@index([namaProvinsi])
+  @@index([nama_provinsi])
   @@map("provinsi") 
 }
 
 model Kabupaten {
-  id            String        @id @default(uuid())
-  kodeProvinsi  String
-  kodeKabupaten String
-  namaKabupaten String
-  provinsi      Provinsi      @relation(fields: [kodeProvinsi], references: [id])
-  lang          String?
-  lat           String?
-  lokasiKejadian LokasiKejadian[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id              String      @id @default(uuid())
+  kode_provinsi   String
+  kode_kabupaten  String      @unique
+  nama_kabupaten  String
+  provinsi        Provinsi    @relation(fields: [kode_provinsi], references: [kode_provinsi])
+  lang            Float?
+  lat             Float?
+  created_at      DateTime    @default(now())
+  updated_at      DateTime    @updatedAt
 
-  @@index([namaKabupaten])
+  @@index([nama_kabupaten])
   @@map("kabupaten")
 }
 
 model SesiChat {
-  id              String        @id @default(uuid())
-  userId          String
-  user            Users         @relation(fields: [userId], references: [id])
-  judul           String        @default("Percakapan Baru") // Judul otomatis berdasarkan topik
-  isActive        Boolean       @default(true)
-  createdAt       DateTime      @default(now())
-  endedAt         DateTime?
-  
-  // Untuk analitik
-  ipAddress       String?
-  userAgent       String?
-  
-  // Relasi ke dokumen hukum yang dibahas
-  referensiDokumen Json?     // IDs dokumen yang dirujuk dalam chat
-  
-  messages        PesanChat[]
-  logHistory      LogHistory[]
-  
-  @@index([userId])
-  @@index([createdAt])
+  id                String        @id @default(uuid())
+  user_id           String
+  user              Users         @relation(fields: [user_id], references: [id])
+  judul             String        @default("Percakapan Baru")
+  is_active         Boolean       @default(true)
+  created_at        DateTime      @default(now())
+  ended_at          DateTime?
+  ip_address        String?
+  user_agent        String?
+  referensi_dokumen Json?
+  messages          PesanChat[]
+  log_history       LogHistory[]
+
+  @@index([user_id])
+  @@index([created_at])
   @@map("sesi_chat")
 }
 
 model PesanChat {
   id              String        @id @default(uuid())
-  sessionId       String
-  session         SesiChat      @relation(fields: [sessionId], references: [id])
+  session_id      String
+  session         SesiChat      @relation(fields: [session_id], references: [id])
   content         String
-  isUserMessage   Boolean       // true untuk user, false untuk bot
+  is_user_message Boolean       // true untuk user, false untuk bot
   timestamp       DateTime      @default(now())
-  
-  // Untuk analisis NLP
-  intent          String?       // Klasifikasi intent (misal: "tanya_putusan", "minta_ringkasan")
-  entities        Json?         // Entitas yang terdeteksi (pasal, nama, dll)
-  
-  // Referensi dokumen
-  uriDokumen      Json?         // Link dokumen yang dirujuk
-  
-  @@index([sessionId])
+  intent          String?
+  entities        Json?
+  uri_dokumen     Json?
+
+  @@index([session_id])
   @@index([timestamp])
   @@map("pesan_chat")
 }
 
 model LogHistory {
   id                String        @id @default(uuid())
-  userId            String
-  user              Users         @relation(fields: [userId], references: [id])
-  tipeAktivitas     ActivityType  @default(CHAT_SESSION)
-  detailAktivitas   Json?
-  nomorPutusan      String?
-  putusan           Putusan?      @relation(fields: [nomorPutusan], references: [id])
-  searchQuery       String?
-  sesiChatId        String?       @unique
-  sesiChat          SesiChat?     @relation(fields: [sesiChatId], references: [id])
+  user_id           String
+  user              Users         @relation(fields: [user_id], references: [id])
+  tipe_aktivitas    ActivityType  @default(CHAT_SESSION)
+  detail_aktivitas  Json?
+  nomor_putusan     String?
+  putusan           Putusan?      @relation(fields: [nomor_putusan], references: [id])
+  search_query      String?
+  sesi_chat_id      String?       @unique
+  sesi_chat         SesiChat?     @relation(fields: [sesi_chat_id], references: [id])
+  ip_address        String?
+  user_agent        String?
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
 
-  ipAddress         String?
-  userAgent         String?
-  
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  @@index([userId])
-  @@index([tipeAktivitas])
-  @@index([createdAt])
+  @@index([user_id])
+  @@index([tipe_aktivitas])
+  @@index([created_at])
   @@map("log_history")
 }
 
@@ -236,6 +235,4 @@ enum ActivityType {
   CHAT_SESSION     // Sesi percakapan dengan chatbot
   DOCUMENT_UPLOAD  // Upload dokumen
   DOCUMENT_SEARCH  // Pencarian dokumen
-  SYSTEM_LOGIN     // Login ke sistem
-  DOCUMENT_VIEW    // Melihat dokumen
 }
