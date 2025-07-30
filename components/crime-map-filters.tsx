@@ -20,11 +20,11 @@ export function CrimeMapFilters({
     onRegionChange
 }: CrimeMapFiltersProps) {
     return (
-        <div className="flex items-center space-x-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <select
                 value={selectedCrimeType}
                 onChange={(e) => onCrimeTypeChange(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors"
+                className="text-xs sm:text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors flex-1 sm:flex-none"
             >
                 {crimeTypeOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -36,7 +36,7 @@ export function CrimeMapFilters({
             <select
                 value={selectedPeriod}
                 onChange={(e) => onPeriodChange(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors"
+                className="text-xs sm:text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors flex-1 sm:flex-none"
             >
                 {periodOptions.map(option => (
                     <option key={option.value} value={option.value}>
@@ -48,7 +48,7 @@ export function CrimeMapFilters({
             <select
                 value={selectedRegion}
                 onChange={(e) => onRegionChange(e.target.value)}
-                className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors"
+                className="text-xs sm:text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent transition-colors flex-1 sm:flex-none"
             >
                 {regionOptions.map(option => (
                     <option key={option.value} value={option.value}>
