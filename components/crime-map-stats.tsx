@@ -31,7 +31,12 @@ export function CrimeMapStats({ districts, selectedCrimeType }: CrimeMapStatsPro
                 <div className="bg-gray-50 rounded-lg p-3">
                     <div className="text-center">
                         <div className="text-2xl font-bold text-black">{totalCases}</div>
-                        <div className="text-sm text-gray-600">Total Kasus</div>
+                        <div className="text-sm text-gray-600">
+                            {selectedCrimeType === 'all'
+                                ? 'Total Kasus'
+                                : `Kasus ${selectedCrimeType.charAt(0).toUpperCase() + selectedCrimeType.slice(1)}`
+                            }
+                        </div>
                     </div>
                 </div>
 

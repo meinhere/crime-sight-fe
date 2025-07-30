@@ -13,7 +13,7 @@ export interface District {
     }
 }
 
-// Data kabupaten (saat ini hanya Madura, nanti akan bertambah)
+// Data kabupaten Madura
 export const districtsData: District[] = [
     {
         id: 'bangkalan',

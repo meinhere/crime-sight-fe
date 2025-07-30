@@ -63,6 +63,7 @@ export default function CriminalMapsPage() {
                 <IndonesiaCrimeMap
                     districts={filteredDistricts}
                     selectedCrimeType={selectedCrimeType}
+                    selectedRegion={selectedRegion}
                 />
 
                 <CrimeMapStats
