@@ -15,10 +15,11 @@ datasource db {
 }
 
 model WaktuKejadian {
-  id                String   @id @default(uuid())
+  id                String     @id @default(uuid())
   waktu_kejadian    String
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
+  putusan           Putusan[]
+  created_at        DateTime   @default(now())
+  updated_at        DateTime   @updatedAt
 
   @@map("waktu_kejadian")
 }
@@ -54,8 +55,13 @@ model Putusan {
   status_tahanan       String?
   lama_tahanan         String?
   barang_bukti         String?
+  hasil_putusan        String?
+  kode_kabupaten         String?
+  kabupaten            Kabupaten?       @relation(fields: [kode_kabupaten], references: [kode_kabupaten])
   lokasi_kejadian_id   String?
   lokasi_kejadian      LokasiKejadian?  @relation(fields: [lokasi_kejadian_id], references: [id])
+  waktu_kejadian_id    String?
+  waktu_kejadian       WaktuKejadian?   @relation(fields: [waktu_kejadian_id], references: [id])
   hakim                Hakim[]
   putusan_detail       PutusanDetail[]
   log_history          LogHistory[]
@@ -68,6 +74,8 @@ model Putusan {
 
   @@index([nomor_putusan])
   @@index([lokasi_kejadian_id])
+  @@index([waktu_kejadian_id])
+  @@index([kode_kabupaten])
   @@map("putusan")
 }
 
@@ -77,12 +85,14 @@ model PutusanDetail {
   terdakwa_id       String?
   penasihat_id      String?
   hakim_id          String?
-  penuntut_umum_id  String?       
+  penuntut_umum_id  String?     
+  saksi_id          String?
   putusan           Putusan?      @relation(fields: [nomor_putusan], references: [nomor_putusan])
   terdakwa          Terdakwa?     @relation(fields: [terdakwa_id], references: [id])
   penasihat         Penasihat?    @relation(fields: [penasihat_id], references: [id])
   hakim             Hakim?        @relation(fields: [hakim_id], references: [id])
   penuntut_umum     PenuntutUmum? @relation(fields: [penuntut_umum_id], references: [id])
+  saksi             Saksi?           @relation(fields: [saksi_id], references: [id])  
   created_at        DateTime      @default(now())
   updated_at        DateTime      @updatedAt
 
@@ -145,6 +155,17 @@ model LokasiKejadian {
   @@map("lokasi_kejadian")
 }
 
+model Saksi {
+  id             String      @id @default(uuid())
+  nama_saksi     String
+  putusan_detail PutusanDetail[]
+  created_at     DateTime    @default(now())
+  updated_at     DateTime    @updatedAt
+
+  @@index([nama_saksi])
+  @@map("saksi")
+}
+
 model Provinsi {
   id             String        @id @default(uuid())
   kode_provinsi  String        @unique
@@ -165,6 +186,7 @@ model Kabupaten {
   kode_kabupaten  String      @unique
   nama_kabupaten  String
   provinsi        Provinsi    @relation(fields: [kode_provinsi], references: [kode_provinsi])
+  putusan         Putusan[]
   lang            Float?
   lat             Float?
   created_at      DateTime    @default(now())
