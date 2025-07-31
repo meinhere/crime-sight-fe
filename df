@@ -1,0 +1,125 @@
+[33mcommit 4bc1f5ca906d2d75355fcb763ff963d2ae72aac2[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mcriminal-maps[m[33m)[m
+Author: abdulrahemfaqih <faqih3935@gmail.com>
+Date:   Wed Jul 30 13:36:26 2025 +0700
+
+    fix(navbar): memperbaiki responsivitas
+
+[33mcommit d64cd8ba9b3cfd74dfd9cb1332024cd93de1b4a7[m[33m ([m[1;31morigin/criminal-maps[m[33m)[m
+Merge: 8a65ec5 cdc38be
+Author: abdulrahemfaqih <faqih3935@gmail.com>
+Date:   Wed Jul 30 13:12:04 2025 +0700
+
+    fix: package
+
+[33mcommit 8a65ec5645a2a9cadcbf33888fc0730275bd670a[m
+Author: abdulrahemfaqih <faqih3935@gmail.com>
+Date:   Wed Jul 30 13:03:55 2025 +0700
+
+    feat: maps with data dummy madura
+
+[33mcommit cdc38be2e606299ad9e6e26950d4e732dc5c8b4c[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: ecfca9c 5f9be3f
+Author: Sabil Ahmad Hidayat <75411334+meinhere@users.noreply.github.com>
+Date:   Wed Jul 30 11:13:38 2025 +0700
+
+    Merge pull request #5 from meinhere/back-end
+    
+    feat(db): update schema db serta buat seeder provinsi, kabupaten, lok…
+
+[33mcommit 5f9be3f77240ac71d7bbdc320084b60d5834908f[m
+Merge: 0c49886 ecfca9c
+Author: Sabil Ahmad Hidayat <75411334+meinhere@users.noreply.github.com>
+Date:   Wed Jul 30 11:12:53 2025 +0700
+
+    Merge branch 'main' into back-end
+
+[33mcommit ecfca9ca300b5654ab0ae186b95f3483313ed613[m
+Merge: 77fc724 e7d9bd4
+Author: Sabil Ahmad Hidayat <75411334+meinhere@users.noreply.github.com>
+Date:   Wed Jul 30 11:09:52 2025 +0700
+
+    Merge pull request #4 from meinhere/login-register
+    
+    feat: slicing login, register, forgot-pw
+
+[33mcommit 0c4988658c4db84af310be4fe547ced874372300[m
+Author: meinhere <sabilahmad615@gmail.com>
+Date:   Wed Jul 30 11:06:26 2025 +0700
+
+    feat(db): update schema db serta buat seeder provinsi, kabupaten, lokasi_kejadian, dan waktu_kejadian
+
+[33mcommit 87f41b74b878d52927ebe0271d91e202d91aeaae[m
+Author: abdulrahemfaqih <faqih3935@gmail.com>
+Date:   Tue Jul 29 19:42:44 2025 +0700
+
+    feat: peta section criminal-maps
+
+[33mcommit 0bdcc1e453c7efa9deaf11551d424a217eb18f37[m
+Author: abdulrahemfaqih <faqih3935@gmail.com>
+Date:   Tue Jul 29 18:30:49 2025 +0700
+
+    feat: file structure
+
+[33mcommit e7d9bd4702ced94d87abc93ac033ff646bf19d51[m
+Author: abdulrahemfaqih <faqih3935@gmail.com>
+Date:   Tue Jul 29 14:59:10 2025 +0700
+
+    feat: slicing login, register, forgot-pw
+
+[33mcommit 77fc7246590ec898ee14772a0fc59c3265976d1c[m[33m ([m[1;32mmain[m[33m, [m[1;32mdashboard-template[m[33m)[m
+Merge: 8af709a 38bbedb
+Author: Sabil Ahmad Hidayat <75411334+meinhere@users.noreply.github.com>
+Date:   Tue Jul 29 08:35:26 2025 +0700
+
+    Merge pull request #3 from meinhere/back-end
+    
+    feat(db): buat migration dan user seeders serta koneksi ke supabase
+
+[33mcommit 38bbedb81107871a741e97befacb6b80a4c5b79c[m
+Merge: ad32d20 8af709a
+Author: Sabil Ahmad Hidayat <75411334+meinhere@users.noreply.github.com>
+Date:   Tue Jul 29 08:34:20 2025 +0700
+
+    Merge branch 'main' into back-end
+
+[33mcommit ad32d20622a08b480a07612953fa997c3d9f4479[m
+Author: meinhere <sabilahmad615@gmail.com>
+Date:   Tue Jul 29 08:16:21 2025 +0700
+
+    feat(db): buat migration dan user seeders serta koneksi ke supabase
+
+[33mcommit 8af709a2616dad6436d652d440e3bf61fde4098e[m
+Merge: 0f5cc8c 1d4b65d
+Author: Sabil Ahmad Hidayat <75411334+meinhere@users.noreply.github.com>
+Date:   Mon Jul 28 11:52:01 2025 +0700
+
+    Merge pull request #2 from meinhere/model
+    
+    feat(model): progres scraping data
+
+[33mcommit 1d4b65d2029cb5addacf7c4896436df1bc7596f5[m
+Author: meinhere <sabilahmad615@gmail.com>
+Date:   Mon Jul 28 11:49:26 2025 +0700
+
+    feat(model): progres scraping data
+
+[33mcommit 0f5cc8ce8a1e0a1f4192e5aa4cd7c6434830f0e4[m
+Merge: 98aee1a 70980a7
+Author: Sabil Ahmad Hidayat <75411334+meinhere@users.noreply.github.com>
+Date:   Mon Jul 28 11:33:58 2025 +0700
+
+    Merge pull request #1 from meinhere/dashboard-template
+    
+    feat: template dashboard
+
+[33mcommit 70980a77478b92218519fc3ef50c8f0e87831bec[m[33m ([m[1;31morigin/dashboard-template[m[33m)[m
+Author: abdulrahemfaqih <faqih3935@gmail.com>
+Date:   Mon Jul 28 11:30:11 2025 +0700
+
+    feat: template dashboard
+
+[33mcommit 98aee1a448f99a101011dbcafd5e6a9cf41bbbde[m
+Author: meinhere <sabilahmad615@gmail.com>
+Date:   Mon Jul 28 10:01:25 2025 +0700
+
+    Initial commit from Create Next App
