@@ -13,6 +13,18 @@ export interface District {
     }
 }
 
+export interface YearlyData {
+    year: number
+    totalCases: number
+    crimeTypes: {
+        korupsi: number
+        narkotika: number
+        pencurian: number
+        penganiayaan: number
+        penggelapan: number
+    }
+}
+
 // Data kabupaten Madura
 export const districtsData: District[] = [
     {
@@ -97,4 +109,82 @@ export const regionOptions = [
     { value: 'sampang', label: 'Kabupaten Sampang' },
     { value: 'pamekasan', label: 'Kabupaten Pamekasan' },
     { value: 'sumenep', label: 'Kabupaten Sumenep' }
+]
+
+
+export const yearlyTrendData: YearlyData[] = [
+    {
+        year: 2020,
+        totalCases: 287,
+        crimeTypes: {
+            korupsi: 78,
+            narkotika: 65,
+            pencurian: 89,
+            penganiayaan: 34,
+            penggelapan: 21
+        }
+    },
+    {
+        year: 2021,
+        totalCases: 321,
+        crimeTypes: {
+            korupsi: 89,
+            narkotika: 72,
+            pencurian: 98,
+            penganiayaan: 41,
+            penggelapan: 21
+        }
+    },
+    {
+        year: 2022,
+        totalCases: 389,
+        crimeTypes: {
+            korupsi: 102,
+            narkotika: 87,
+            pencurian: 123,
+            penganiayaan: 52,
+            penggelapan: 25
+        }
+    },
+    {
+        year: 2023,
+        totalCases: 398,
+        crimeTypes: {
+            korupsi: 98,
+            narkotika: 91,
+            pencurian: 128,
+            penganiayaan: 56,
+            penggelapan: 25
+        }
+    },
+    {
+        year: 2024,
+        totalCases: 356,
+        crimeTypes: {
+            korupsi: 87,
+            narkotika: 79,
+            pencurian: 115,
+            penganiayaan: 49,
+            penggelapan: 26
+        }
+    },
+    {
+        year: 2025,
+        totalCases: 189,
+        crimeTypes: {
+            korupsi: 45,
+            narkotika: 42,
+            pencurian: 67,
+            penganiayaan: 23,
+            penggelapan: 12
+        }
+    }
+]
+
+// Options untuk filter tahun
+export const yearRangeOptions = [
+    { value: '3', label: '3 Tahun Terakhir' },
+    { value: '5', label: '5 Tahun Terakhir' },
+    { value: 'all', label: 'Semua Tahun' },
+    { value: 'custom', label: 'Custom Range' }
 ]
