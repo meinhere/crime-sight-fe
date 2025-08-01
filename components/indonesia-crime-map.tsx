@@ -1,11 +1,14 @@
+
 'use client'
 
-import { MapContainer, TileLayer, Popup, GeoJSON } from 'react-leaflet'
-import { Icon } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+
+import { GeoJSON, MapContainer, Popup, TileLayer } from 'react-leaflet'
+import { useEffect, useMemo, useState } from 'react'
+
 import { District } from '@/data/districts-data'
+import { Icon } from 'leaflet'
 import kabupatenGeoJSON from '@/data/kabupaten.json'
-import { useMemo } from 'react'
 
 // Fix leaflet icons
 delete (Icon.Default.prototype as any)._getIconUrl
@@ -208,8 +211,16 @@ export function IndonesiaCrimeMap({
         })
     }
 
+    // Prevent SSR/hydration error: only render map on client
+    const [isClient, setIsClient] = useState(false);
+    useEffect(() => { setIsClient(true); }, []);
+
+    if (!isClient) {
+        return <div className="h-full w-full bg-gray-100 flex items-center justify-center">Memuat peta...</div>;
+    }
+
     return (
-        <div className="h-full w-full">
+        <div className="h-full w-full min-h-[400px]">
             <MapContainer
                 center={mapConfig.center}
                 zoom={mapConfig.zoom}
