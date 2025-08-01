@@ -3,4 +3,10 @@ python-dotenv
 requests
 pandas
 bs4
-PyGithub
+google-genai
+supabase
+httpx
+fastapi
+uvicorn
+pydantic
+scikit-learn

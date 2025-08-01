@@ -1,350 +1,426 @@
 import requests
+import io
+import uuid
+import json
 import time
-import warnings
+import httpx
+import pathlib
+from supabase import create_client, Client
 from bs4 import BeautifulSoup
-import re
-import csv
+from PyPDF2 import PdfReader, PdfWriter
+from urllib.parse import urljoin
+from datetime import datetime
+from itertools import zip_longest
+from google import genai
+from google.genai import types
+
 import os
-import os.path
-from github import Github
 from dotenv import load_dotenv
-load_dotenv()
+load_dotenv()  # take environment variables
 
-# Replace with your personal access token
-GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
-# Replace with your username and repository name
-REPO_OWNER = os.getenv('REPO_OWNER')
-REPO_NAME = os.getenv('REPO_NAME')
-FILE_PATH = "https://github.com/meinhere/clustering-kejahatan/data_scrap/hasil_list_url.txt"
-COMMIT_MESSAGE = "Update hasil_list_url.txt"
+from prompt import prompt_detail_putusan
 
-"""*   **request** digunakan untuk melakukan permintaan HTTP untuk mengakses konten dari website
-*   **time**  digunakan untuk menghitung eksekusi dari proses program
-*   **warnnings** digunakan untuk menonaktifkan peringatan
+# Inisialisasi Supabase Client
+supabase: Client = create_client(
+  os.getenv("SUPABASE_URL"),
+  os.getenv("SUPABASE_KEY")
+)
 
-*   **BeautifulSoup** dari bs4  digunakan untuk memparsing html dan mengambil elemen elemen bahkan text dari elemen itu dari halaman website
-*   **re** digunakan untuk pencocokan pola menggunakan regular expression
-*   **csv** untuk menulis dan menyimpan data dalam format csv
-*   **os**  digunakan ketika ingin berinteraksi dengan sistem operasi seperti membuat direktori
+client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
 
-### Kode untuk mengambil link putusan
-"""
+def extract_url_document(prompt, doc_url):
+  """Ekstrak data dokumen putusan dari public storage supabase"""
+  doc_data = httpx.get(doc_url).content
 
-def getURLfromWeb(url):
-    response = requests.get(url, verify=False)
+  response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=[
+        types.Part.from_bytes(
+          data=doc_data,
+          mime_type='application/pdf',
+        ),
+        prompt])
 
-    htmlCode1 = BeautifulSoup(response.text, 'html.parser')
-    result1 = htmlCode1.findAll('a')
+  return response.text
 
-    urlHasil=[] # tempat untuk menyimpan kumpulan url perhalaman
-    for eachResult1 in result1:
-        cariURLawal=str(eachResult1).find('https://putusan3.mahkamahagung.go.id/direktori/putusan/')
-        cariURLakhir=str(eachResult1).find('html">Putusan') + 4
-        if cariURLawal == 9 and cariURLakhir >= 4:
-            cariURL=str(eachResult1)[cariURLawal:cariURLakhir]
-            urlHasil.append(cariURL)
-    return urlHasil
+def extract_local_document(prompt, filename):
+  """Ekstrak data dokumen putusan dari local storage"""
+  filepath = pathlib.Path(filename)
 
-def main():
-    warnings.filterwarnings('ignore')
-    url = "https://putusan3.mahkamahagung.go.id/direktori/index/pengadilan/pn-banyuwangi/kategori/pidana-umum-1"
+  response = client.models.generate_content(
+    model="gemini-2.5-flash",
+    contents=[
+        types.Part.from_bytes(
+          data=filepath.read_bytes(),
+          mime_type='application/pdf',
+        ),
+        prompt])
+  return response.text
 
-    end = 107 + 1
-    listHasil = []
-    start = 57
+def get_all_links(base_url, page=1, page_end=20):
+    """Ambil semua link putusan dari semua halaman"""
+    links = []
+    while True:
+        # Cek jika halaman melebihi batas
+        if page > page_end:
+            break
 
-    startTime = time.time()
-    
-    for i in range(start, end):
-        url = f"{url}/page/{i}.html"
-        listHasil = getURLfromWeb(url)
-        print(f"--- PAGE {i}")
-        NEW_CONTENT = ''
-
-        for listURL in listHasil:
-            NEW_CONTENT += f"{listURL}\n"
+        url = f"{base_url}/page/{page}.html" if page > 1 else base_url
+        print(f"Mengambil halaman {page}...")
 
         try:
-            g = Github(GITHUB_TOKEN)
-            repo = g.get_user(REPO_OWNER).get_repo(REPO_NAME)
+            response = requests.get(url)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, 'html.parser')
 
-            try:
-                # Try to get the file to update it
-                contents = repo.get_contents(FILE_PATH)
-                repo.update_file(contents.path, COMMIT_MESSAGE, NEW_CONTENT, contents.sha)
-                print(f"File '{FILE_PATH}' updated successfully.")
-            except Exception:
-                # If the file doesn't exist, create it
-                repo.create_file(FILE_PATH, COMMIT_MESSAGE, NEW_CONTENT)
-                print(f"File '{FILE_PATH}' created successfully.")
+            # Cek jika sudah di halaman terakhir
+            if "Tidak ditemukan" in soup.text:
+                break
+
+            # Ambil semua link putusan
+            items = soup.select('.spost.clearfix .entry-c strong a')
+            if not items:
+                break
+
+            for item in items:
+                # Cek jika judul putusan (pid.c -> banyak data yg tidak lengkap)
+                if "pid.c" not in item.text.lower():
+                  links.append(urljoin(base_url, item['href']))
+
+            page += 1
+            time.sleep(1)  # Delay untuk menghindari blocking
 
         except Exception as e:
-            print(f"An error occurred: {e}")
-
-    # file_hasil.close()
-    g.close()
-    endTime = time.time()
-    print(listHasil)
-    print('Time Processing : ', endTime-startTime, ' Second')
-
-main()
-
-# """pada fungsi **getURLfromWeb** digunakan untuk melakukan proses pengambilan url putusan yang dinginkan pada halaman putusan pengadilan negeri banyuwangi
-
-
-# ## **STEP 2 - Mendapatkan MetaData Putusan**
-
-# Pada step 2 ini nertujuan untuk mendapatkan metaData dari url yang kita sudah dapatkan, berikut contoh halaman yang metadanya ingin kita ambil https://putusan3.mahkamahagung.go.id/direktori/putusan/zaec82579b6441609a3f313233353332.html. yang ingin kita ambil yaitu terdakwa, penuntut umum, sampai link pdf putusannya. Semua akan disimpan ke dalam format csv yang akan dijadikan dataset
-
-# ### Kode untuk generate Meta (mengambil Metadata)
-# """
-
-# def generateMeta(urlMeta):
-
-#     url = str(urlMeta).strip()
-#     response = requests.get(url, verify=False)
-#     print(response)
-
-#     soup = BeautifulSoup(response.text, 'html.parser')
-#     cleanTags = re.compile('<.*?>')
-
-#     # list data yang akan di ambil
-#     listMetaHead = ["terdakwa", "penuntut_umum", "nomor", "tingkat_proses", "klasifikasi", "kata_kunci", "tahun", "tanggal_register",
-#               "lembaga_peradilan", "jenis_lembaga_peradilan", "hakim_ketua", "hakim_anggota", "panitera", "amar",
-#               "amar_lainnya", "catatan_amar", "tanggal_musyawarah", "tanggal_dibacakan", "kaidah", "abstrak", "url"]
-
-#     listMeta = []
-
-#     rowsMETA1 = soup.find("ul", {"class": "portfolio-meta nobottommargin"}).find("table").findAll("tr")
-#     rowsMETA2 = soup.findAll("ul", {"class": "portfolio-meta nobottommargin"})
-
-#     #print('-------------------------')
-#     for row in rowsMETA1:
-#         coll = row.findAll("td")
-
-#         cleantext2 =''
-#         cleantext1 =''
-
-#         if len(coll) > 1:
-#             cleantext2 = (re.sub(cleanTags, '', str(coll[1]))).strip()
-#             listMeta.append(cleantext2.replace('\n',' '))
-#         else:
-#             cleantext1 = (re.sub(cleanTags, ' ', str(coll[0]))).strip()
-#             # untuk putusan pidana akan muncul terdakwa dan penuntut umum pada meta
-#             # sedangkan untuk putusan selain pidana tidak muncul
-
-#             pidorpdt = re.search( r'(.*)/Pdt.(.*)',str(cleantext1), re.M|re.I)
-
-#             # check dokumen putusannya pidana atau perdata
-#             if pidorpdt == None:
-#                 entTerdakwah = re.search( r'(.*)Terdakwa:(.*)',str(cleantext1), re.M|re.I)
-#                 entPenuntut = re.search( r'Penuntut Umum:(.*)Terdakwa:',str(cleantext1), re.M|re.I)
-#             else:
-#                 entTerdakwah = re.search( r'(.*)Tergugat:(.*)',str(cleantext1), re.M|re.I)
-#                 entPenuntut = re.search( r'Penggugat:(.*)Tergugat:',str(cleantext1), re.M|re.I)
-
-#             if entTerdakwah == None:
-#                 listMeta.append("")
-#             else:
-#                 listMeta.append(entTerdakwah.group(2))
-
-#             if entPenuntut == None:
-#                 listMeta.append("")
-#             else:
-#                 listMeta.append(entPenuntut.group(1))
-#     # proses url dokumen
-#     urlDL = rowsMETA2[1].findAll("li")
-#     urlDLStr = str(urlDL[4])
-#     listMeta.append(urlDLStr[urlDLStr.find("https"):urlDLStr.find('">')])
-
-#     return listMeta
-
-# """Fungsi `generateMeta()` bertujuan untuk mengambil metadata dari sebuah halaman web dengan melakukan permintaan HTTP GET ke URL yang diberikan, kemudian memparsing teks HTML respons menggunakan BeautifulSoup. Fungsi ini mengekstrak berbagai metadata terkait putusan pengadilan, seperti nama terdakwa, penuntut umum, nomor kasus, tingkat proses, dan URL dokumen. Metadata yang diambil berasal dari elemen-elemen HTML tertentu, yang diproses menggunakan teknik pencarian tag HTML dan regex untuk membedakan apakah dokumen tersebut adalah putusan pidana atau perdata. Jika regex menemukan data yang sesuai, seperti nama terdakwa atau tergugat, data tersebut akan ditambahkan ke dalam daftar metadata. Selain itu, fungsi ini juga mengekstrak URL dokumen dari halaman. Hasil akhirnya adalah daftar metadata yang berisi informasi penting yang telah diekstrak dan dibersihkan dari halaman web tersebut.
-
-# ### Kode untuk generate kedalam format csv
-
-# Setelah dapat metadatanya nah informasi tersebut akan di simpan ke format csv
-# """
-
-# def generateFileCSV(listHasil,csvName1):
-
-# 	csvName = csvName1 #nama file csv
-
-# 	if os.path.exists(csvName): # cek ada atau belum
-# 		# jika ada maka akan menambahkan
-# 		f = open(csvName, 'a', newline='\n')
-# 		print(f)
-# 		print("ada")
-# 		w = csv.writer(f)
-
-# 	else:
-# 		# jika tidaka da maka akan membuat baru
-# 		f = open(csvName, 'w', newline='\n')
-# 		print(f)
-# 		print("tidak ada")
-# 		# menambahkan baris pertama (header)
-# 		w = csv.writer(f)
-# 		w.writerow(("terdakwa", "penuntut_umum", "nomor", "tingkat_proses", "klasifikasi", "kata_kunci", "tahun", "tanggal_register",
-#               "lembaga_peradilan", "jenis_lembaga_peradilan", "hakim_ketua", "hakim_anggota", "panitera", "amar",
-#               "amar_lainnya", "catatan_amar", "tanggal_musyawarah", "tanggal_dibacakan", "kaidah", "abstrak", "url"))
-
-# 	# menulis file csv
-# 	for s in listHasil:
-# 		# mengiterasi data list hasil satu persatu lalu dimasukkan seusai dengan kolomnya
-# 		w.writerow(s)
-# 	#tutup file
-# 	f.close()
-# 	berhasil = "\nCreate Csv file Berhasil\n"
-# 	return berhasil
-
-# """Fungsi `generateFileCSV()` bertujuan untuk membuat atau menambahkan data ke dalam file CSV. Fungsi ini menerima dua parameter: `listHasil`, yaitu daftar data yang akan dimasukkan ke dalam file CSV, dan `csvName1`, yang merupakan nama file CSV. Pertama, fungsi memeriksa apakah file dengan nama yang diberikan sudah ada menggunakan `os.path.exists()`. Jika file sudah ada, fungsi membuka file tersebut dalam mode append untuk menambahkan data baru ke bagian akhir file. Jika file belum ada, fungsi membuat file baru dalam mode write dan menambahkan header berisi nama-nama kolom yang sesuai seperti `terdakwa`, `penuntut_umum`, `nomor`, dan sebagainya. Setelah itu, fungsi menulis setiap elemen dari listHasil ke file CSV baris demi baris. Terakhir, file CSV ditutup untuk memastikan data tersimpan dengan benar, dan fungsi mengembalikan pesan bahwa pembuatan atau penambahan data ke file CSV telah berhasil.
-
-# ### Kode utama untuk mengambil metada dari pagenya dan menyimpan ke format csv
-# """
-
-# def main():
-
-#     warnings.filterwarnings('ignore')
-
-#     fileListURL = "/content/drive/MyDrive/Colab Notebooks/INFORMATION EXTRACTION/hasilListURLNEW_TEST.txt"
-#     fileMetaCSV = "/content/drive/MyDrive/Colab Notebooks/INFORMATION EXTRACTION/metaPidananUmumPN-Banyuwangi_new-Page-57-107_NEW_TEST.csv"
-#     listHasil =[]
-
-#     startTime = time.time()
-#     # membaca setiap link pada file txt
-#     openfileListURL = open(fileListURL, "r", encoding='UTF8')
-#     bacaListURL = openfileListURL.readlines()
-
-#     ukuran_batch = 200
-
-#     i = 1
-#     for barisURL in bacaListURL:
-#         try:
-#             # ekstrak informasi metadata
-#             hasil = generateMeta(str(barisURL))
-#             listHasil.append(hasil)
-#             print(f"link ke - {i} berhasil diproses.")
-
-#             if len(listHasil) >= ukuran_batch:
-#                 generateFileCSV(listHasil, fileMetaCSV)
-#                 listHasil = []
-#         except Exception as e:
-#             print(f"Error Get Meta Inf, {e}")
-#         i=i+1
-
-#     createFile = generateFileCSV(listHasil,fileMetaCSV)
-
-#     openfileListURL.close()
-#     endTime = time.time()
-#     print('Time Processing : ', endTime-startTime, ' Second')
-
-# main()
-
-# """Fungsi `main()` berfungsi sebagai program utama yang mengatur proses pengambilan dan penyimpanan metadata dari beberapa halaman web dalam bentuk CSV. Pertama, fungsi ini menonaktifkan peringatan menggunakan `warnings.filterwarnings('ignore')` dan menetapkan dua variabel: `fileListURL`, yang berisi path ke file teks dengan daftar URL yang akan diekstrak, serta `fileMetaCSV`, yaitu path di mana hasil metadata akan disimpan dalam file CSV. Data metadata yang dihasilkan akan disimpan sementara dalam `listHasil`. Fungsi ini kemudian mencatat waktu mulai pemrosesan dengan `time.time()`.
-
-# Setelah itu, fungsi membuka dan membaca file teks `fileListURL` yang berisi daftar URL. Setiap baris di file tersebut berisi URL yang akan diproses untuk mengekstraksi metadata menggunakan fungsi `generateMeta()` yang telah dijelaskan sebelumnya. Fungsi `generateMeta()` digunakan di dalam loop yang mengiterasi setiap URL. Metadata dari setiap URL yang berhasil diproses ditambahkan ke dalam `listHasil`, dan setiap kali jumlah hasil mencapai batas ukuran batch yang ditentukan (`ukuran_batch = 200`), fungsi `generateFileCSV()` dipanggil untuk menyimpan metadata yang terkumpul ke file CSV. Fungsi ini bertugas menulis data ke file CSV, baik dengan membuat file baru atau menambahkannya jika sudah ada, seperti yang dijelaskan sebelumnya.
-
-# Jika terjadi kesalahan saat memproses URL tertentu, program menangkap pengecualian menggunakan blok `try-except`, dan melanjutkan ke URL berikutnya, sambil mencatat kesalahan. Setelah semua URL diproses, sisa metadata yang belum tersimpan dalam batch terakhir akan disimpan ke file CSV menggunakan `generateFileCSV()`. File yang dibuka untuk membaca URL kemudian ditutup, dan waktu total yang dibutuhkan untuk memproses semua URL dihitung dan ditampilkan.
-
-# Secara keseluruhan, fungsi `main()` mengatur alur kerja utama dengan memanfaatkan fungsi `generateMeta()` untuk ekstraksi metadata dari setiap URL dan fungsi `generateFileCSV()` untuk menyimpan hasil tersebut ke file CSV dalam batch. Kedua fungsi ini bekerja bersama-sama untuk memastikan proses pengekstrakan metadata dari sejumlah URL berjalan dengan efisien dan data hasilnya tersimpan dengan benar.
-
-# ## **STEP 3 - Prepocessing Dataset MetaData**
-
-# Pada taham ini bertujuan untuk memberishkan dataset yang sudah kita dpatkan, yang nantinya kita akan menghapus baris data yang mempunyai missing vale pada kolom url pdfnya, karena pada tahep selanjutnya ialah kita mengunduh file pdf yang ada pada kolom url pdfnya
-
-# ### Import Library yang digunakan
-# """
-
-# import pandas as pd
-
-# """### Load Dataset"""
-
-# file_path = "/content/drive/MyDrive/Colab Notebooks/INFORMATION EXTRACTION/metaPidananUmumPN-Banyuwangi_new-Page-57-107_NEW.csv"
-# data = pd.read_csv(file_path, on_bad_lines='skip')
-# data.head()
-
-# """terdapat 1098 baris dan 21 kolom
-
-# ## Info Data
-# """
-
-# print(data.shape)
-
-# print(data.info())
-
-# """### Misiing Value"""
-
-# print(data.isnull().sum())
-
-# """### Hapus baris data yang memiliki missing value pada **kolom url** dan asimpan hasilnya"""
-
-# data_cleaned = data.dropna(subset=['url'])
-# print(f"Jumlah baris data setelah dihapus penghapusan: {data_cleaned.shape[0]} baris")
-# output_path = "/content/drive/MyDrive/Colab Notebooks/INFORMATION EXTRACTION/cleanedmetaPidananUmumPN-Banyuwangi_new-Page-57-107.csv"
-# data_cleaned.to_csv(output_path, index=False)
-
-# df = pd.read_csv(output_path)
-# df.head(100)
-
-# """### **Menghitung distribusi tiap putusan**"""
-
-# kode_list = ['Pid.Sus', 'Pid.B', 'Pid.C']
-
-# # Menghitung jumlah kemunculan tiap kode
-# for kode in kode_list:
-#     jumlah = df['nomor'].str.contains(kode).sum()
-#     print(f"Jumlah {kode}: {jumlah}")
-
-# filtered_data = df[df['nomor'].str.contains('Pid.B|Pid.Sus', na=False)]
-# filtered_data
-
-# kode_list = ['Pid.Sus', 'Pid.B', 'Pid.C']
-
-# # Menghitung jumlah kemunculan tiap kode
-# for kode in kode_list:
-#     jumlah = filtered_data['nomor'].str.contains(kode).sum()
-#     print(f"Jumlah {kode}: {jumlah}")
-
-# # jadikan variebal yang filtered_data menjadi csv
-# output_path = "/content/drive/MyDrive/Colab Notebooks/INFORMATION EXTRACTION/filtered_metaPidB_SUS_PN-Banyuwangi_NEW.csv"
-# filtered_data.to_csv(output_path, index=False)
-
-# df_pid_b_sus = pd.read_csv(output_path)
-# df_pid_b_sus.head()
-
-# kode_list = ['Pid.Sus', 'Pid.B']
-
-# # Menghitung jumlah kemunculan tiap kode
-# for kode in kode_list:
-#     jumlah = df_pid_b_sus['nomor'].str.contains(kode).sum()
-#     print(f"Jumlah {kode}: {jumlah}")
-
-# """## **STEP 4 - Download file pdf putusan**
-
-# pada step ini bertujuan mendownload file pdf yang ada di kolom url pada dataset yang sudah di bersihkan
-# """
-
-# def download_files_from_csv(csv_file_path, output_folder):
-#     with open(csv_file_path, 'r') as file:
-#         csv_reader = csv.reader(file)
-#         next(csv_reader)  # skip header
-#         for row in csv_reader:
-#             url = row[20]
-#             download_file(url, output_folder)
-
-# def download_file(url, output_folder):
-#     response = requests.get(url)
-#     if response.status_code == 200:
-#         file_name = url.split("/")[-1]
-#         file_path = f"{output_folder}/{file_name}.pdf"
-#         with open(file_path, 'wb') as file:
-#             file.write(response.content)
-#         print(f"Downloaded: {file_name}")
-#     else:
-#         print(f"Failed to download: {url}")
-
-# csv_file_path = "/content/drive/MyDrive/Colab Notebooks/INFORMATION EXTRACTION/filtered_metaPidB_SUS_PN-Banyuwangi_NEW.csv"
-# output_folder = "/content/drive/MyDrive/Colab Notebooks/INFORMATION EXTRACTION/PDF_FILTERED_B-SUS_FINAL"
-# download_files_from_csv(csv_file_path, output_folder)
-
-# """Setelah file CSV yang berisi metadata berhasil dibuat menggunakan fungsi sebelumnya dan dibersihkan, kode ini digunakan untuk mendownload file PDF berdasarkan URL yang terdapat di kolom ke-20 dari file CSV tersebut. Fungsi utama, `download_files_from_csv()`, membuka dan membaca file CSV, kemudian mengambil URL dari kolom ke-20 (indeks ke-19) di setiap baris data. URL tersebut digunakan untuk memanggil fungsi `download_file()`, yang bertanggung jawab untuk mendownload file PDF dari URL yang diberikan dan menyimpannya di folder output yang telah ditentukan. `Fungsi download_file()` memeriksa apakah permintaan download berhasil `(status code 200)`, lalu menyimpan file dengan nama yang diambil dari URL dan menambahkan ekstensi .pdf."""
+            print(f"Error saat mengambil halaman {page}: {e}")
+            break
+
+    return links
+
+def compress_pdf(input_buffer):
+    """Kompresi PDF untuk mengurangi ukuran file"""
+    reader = PdfReader(input_buffer)
+    writer = PdfWriter()
+
+    for page in reader.pages:
+        page.compress_content_streams()
+        writer.add_page(page)
+
+    output_buffer = io.BytesIO()
+    writer.write(output_buffer)
+    output_buffer.seek(0)
+    return output_buffer
+
+def upload_to_supabase_storage(file_buffer, file_name):
+    """Upload file ke Supabase Storage"""
+    try:
+        # Upload file dengan content type PDF
+        res = supabase.storage.from_(os.getenv("SUPABASE_BUCKET")).upload(
+            file=file_buffer.getvalue(),
+            path=file_name,
+            file_options={
+                "content-type": "application/pdf"
+            }
+        )
+
+        public_url = supabase.storage.from_(os.getenv("SUPABASE_BUCKET")).get_public_url(file_name)
+        return public_url
+
+    except Exception as e:
+        print(f"Error uploading to Supabase Storage: {e}")
+        return None
+
+def convert_date(date):
+  # Mapping bulan dari Indonesia ke Inggris
+  month_mapping = {
+    "Januari": "January", "Februari": "February", "Maret": "March",
+    "April": "April", "Mei": "May", "Juni": "June",
+    "Juli": "July", "Agustus": "August", "September": "September",
+    "Oktober": "October", "Nopember": "November", "Desember": "December"
+  }
+
+  # Ganti bulan ke bahasa Inggris
+  for indo, eng in month_mapping.items():
+      if indo in date:
+          date = date.replace(indo, eng)
+          break
+
+  return str(datetime.strptime(date, '%d %B %Y').strftime('%Y-%m-%d %H:%M:%S'))
+
+def extract_putusan_data(url):
+    """Ekstrak data putusan dari halaman detail"""
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, 'html.parser')
+
+        # Cek apakah ada PDF
+        pdf_link = None
+        pdf_btn = soup.select_one('a[href*="/pdf/"]')
+        if pdf_btn:
+            pdf_link = urljoin(url, pdf_btn['href'])
+        else:
+          return None
+
+        # Ekstrak metadata
+        data = {
+            "nomor_putusan": None,
+            "uri_dokumen": pdf_link,
+            "judul_putusan": None,
+            "tahun": None,
+            "lembaga_peradilan": None,
+            "panitera": None,
+            "jenis_kejahatan": None,
+            "lokasi_kejadian_id": None,
+            "waktu_kejadian_id": None,
+            "tanggal_upload": None,
+            "tanggal_musyawarah": None,
+            "tanggal_dibacakan": None,
+            "vonis_hukuman": None,
+            "updated_at": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        }
+
+        # Format data dari scraping ke kolom table
+        format_data = {
+            "nomor": "nomor_putusan",
+            "kata_kunci": "jenis_kejahatan",
+            "tanggal_register": "tanggal_upload",
+            "amar_lainnya": "vonis_hukuman"
+        }
+
+        # Ekstrak data dari tabel
+        rows = soup.select('.table tr')
+        for row in rows:
+            cols = row.find_all('td')
+
+            if len(cols) == 1:
+              value = cols[0].find('strong').text.strip()
+              if value:
+                data['judul_putusan'] = value
+            elif len(cols) == 2:
+                key = cols[0].text.strip().lower().replace(" ", "_")
+                value = cols[1].text.strip()
+
+                if key in format_data:
+                    key = format_data[key]
+
+                if key in ['tanggal_upload', 'tanggal_musyawarah', 'tanggal_dibacakan']:
+                    value = convert_date(value)
+
+                if key in data:
+                    data[key] = value
+
+        return data
+
+    except Exception as e:
+        print(f"Error saat ekstrak data dari {url}: {e}")
+        return None
+
+def process_putusan(putusan_url):
+    """Proses satu putusan: ekstrak data + simpan PDF"""
+    try:
+        # Ekstrak metadata
+        data = extract_putusan_data(putusan_url)
+        if not data:
+            print(f"Gagal memproses {putusan_url} karena tidak memiliki link dokumen, dilewati...")
+            return True
+
+        # Ekstrak data detail
+        data_detail = {
+            "alamat_kejadian": None,
+            "status_tahanan": None,
+            "lama_tahanan": None,
+            "barang_bukti": None,
+            "hasil_putusan": None,
+            "lokasi_kejadian_id": None,
+            "waktu_kejadian_id": None,
+            "kode_kabupaten": None,
+            "hakim": [],
+            "terdakwa": [],
+            "penasihat": [],
+            "penuntut_umum": [],
+            "saksi": []
+        }
+
+        # Cek apakah sudah ada di database
+        existing_data = supabase.table('putusan').select('id').eq('nomor_putusan', data['nomor_putusan']).execute()
+        if existing_data.data:
+            print(f"Putusan {data['nomor_putusan']} sudah ada, dilewati...")
+            return True
+
+        # Download PDF
+        pdf_response = requests.get(data['uri_dokumen'])
+        pdf_response.raise_for_status()
+        pdf_buffer = io.BytesIO(pdf_response.content)
+
+        # Kompres PDF
+        compressed_pdf = compress_pdf(pdf_buffer)
+
+        # Upload ke Supabase Storage
+        format_file_name = data['nomor_putusan'].strip().replace(" ", "_").replace("/", "_")
+        file_name = f"putusan/{format_file_name}.pdf"
+
+        # Cek apakah sudah ada data di storage
+        existing_data = supabase.storage.from_(os.getenv("SUPABASE_BUCKET")).list('putusan', {"limit": 1, "search": format_file_name})
+        if existing_data:
+          print(f"File {file_name} sudah ada di storage, dilewati...")
+          return None
+
+        public_url = upload_to_supabase_storage(compressed_pdf, file_name)
+
+        if public_url:
+            # Update data dengan URL Supabase
+            data['uri_dokumen'] = public_url
+
+            # Data ekstrak dokumen
+            result_extract_document = extract_url_document(prompt_detail_putusan, public_url).strip()[7:-3]
+            detail_document = json.loads(result_extract_document)
+
+            # Ambil data waktu dan lokasi kejadian
+            data_waktu_kejadian = supabase.table('waktu_kejadian').select('id', 'waktu_kejadian').execute().data
+            data_lokasi_kejadian = supabase.table('lokasi_kejadian').select('id', 'nama_lokasi').execute().data
+            waktu_kejadian_default = '5179ef1c-aaba-46d8-81eb-c4e5594a2a6f' # id dari data 'Tidak Diketahui' pada database
+            lokasi_kejadian_default = 'd6681071-1eb0-4995-b33e-de78fd87e7c1' # id dari data 'Jalan Umum' pada database
+
+            # Isi data detail
+            for key in detail_document:
+              if key == 'waktu_kejadian_id':
+                id_waktu_kejadian = next((item['id'] for item in data_waktu_kejadian if item['waktu_kejadian'] == detail_document['waktu_kejadian_id']), waktu_kejadian_default)
+                detail_document['waktu_kejadian_id'] = id_waktu_kejadian
+              elif key == 'lokasi_kejadian_id':
+                id_lokasi_kejadian = next((item['id'] for item in data_lokasi_kejadian if item['nama_lokasi'] == detail_document['lokasi_kejadian_id']), lokasi_kejadian_default)
+                detail_document['lokasi_kejadian_id'] = id_lokasi_kejadian
+
+              if key in data_detail:
+                data_detail[key] = detail_document[key]
+
+            # Kelola data untuk simpan ke db
+            data.update(data_detail)
+            data_putusan = dict(list(data.items())[:-5])
+            data_hakim = data['hakim']
+            data_terdakwa = data['terdakwa']
+            data_penasihat = data['penasihat']
+            data_penuntut_umum = data['penuntut_umum']
+            data_saksi = data['saksi']
+
+            # Simpan data putusan
+            data_putusan['id'] = str(uuid.uuid4())
+            res = supabase.table('putusan').insert(data_putusan).execute()
+            nomor_putusan = res.data[0]['nomor_putusan']
+
+            # Simpan data hakim
+            for idx, hakim in enumerate(data_hakim):
+              data_existing = supabase.table('hakim').select('id').eq('nama_hakim', hakim['nama_hakim']).execute()
+              if len(data_existing.data) == 0:
+                hakim['id'] = str(uuid.uuid4())
+                hakim['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                res = supabase.table('hakim').insert(hakim).execute()
+                id = res.data[0]['id']
+              else:
+                id = data_existing.data[0]['id']
+
+              data_hakim[idx]['id'] = id
+
+            # Simpan data terdakwa
+            for idx, terdakwa in enumerate(data_terdakwa):
+              data_existing = supabase.table('terdakwa').select('id').eq('nama_lengkap', terdakwa['nama_lengkap']).execute()
+              if len(data_existing.data) == 0:
+                terdakwa['id'] = str(uuid.uuid4())
+                terdakwa['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                res = supabase.table('terdakwa').insert(terdakwa).execute()
+                id = res.data[0]['id']
+              else:
+                id = data_existing.data[0]['id']
+
+              data_terdakwa[idx]['id'] = id
+
+            # Simpan data penasihat
+            for idx, penasihat in enumerate(data_penasihat):
+              data_existing = supabase.table('penasihat').select('id').eq('nama_penasihat', penasihat['nama_penasihat']).execute()
+              if len(data_existing.data) == 0:
+                penasihat['id'] = str(uuid.uuid4())
+                penasihat['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                res = supabase.table('penasihat').insert(penasihat).execute()
+                id = res.data[0]['id']
+              else:
+                id = data_existing.data[0]['id']
+
+              data_penasihat[idx]['id'] = id
+
+            # Simpan data penuntut_umum
+            for idx, penuntut_umum in enumerate(data_penuntut_umum):
+              data_existing = supabase.table('penuntut_umum').select('id').eq('nama_penuntut', penuntut_umum['nama_penuntut']).execute()
+              if len(data_existing.data) == 0:
+                penuntut_umum['id'] = str(uuid.uuid4())
+                penuntut_umum['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                res = supabase.table('penuntut_umum').insert(penuntut_umum).execute()
+                id = res.data[0]['id']
+              else:
+                id = data_existing.data[0]['id']
+
+              data_penuntut_umum[idx]['id'] = id
+
+            # Simpan data saksi
+            for idx, saksi in enumerate(data_saksi):
+              data_existing = supabase.table('saksi').select('id').eq('nama_saksi', saksi['nama_saksi']).execute()
+              if len(data_existing.data) == 0:
+                saksi['id'] = str(uuid.uuid4())
+                saksi['updated_at'] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                res = supabase.table('saksi').insert(saksi).execute()
+                id = res.data[0]['id']
+              else:
+                id = data_existing.data[0]['id']
+
+              data_saksi[idx]['id'] = id
+
+            # Gabung data putusan detail
+            data_putusan_detail = []
+            for hakim, terdakwa, penasihat, penuntut, saksi in zip_longest(
+                data_hakim,
+                data_terdakwa,
+                data_penasihat,
+                data_penuntut_umum,
+                data_saksi,
+                fillvalue={}
+            ):
+                data_putusan_detail.append({
+                    'id': str(uuid.uuid4()),
+                    'nomor_putusan': nomor_putusan,
+                    'hakim_id': hakim.get('id') if hakim else None,
+                    'terdakwa_id': terdakwa.get('id') if terdakwa else None,
+                    'penasihat_id': penasihat.get('id') if penasihat else None,
+                    'penuntut_umum_id': penuntut.get('id') if penuntut else None,
+                    'saksi_id': saksi.get('id') if saksi else None,
+                    'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                })
+
+            # Simpan data putusan detail
+            for detail in data_putusan_detail:
+              supabase.table('putusan_detail').insert(detail).execute()
+
+            print(f"Berhasil menyimpan putusan {data['nomor_putusan']}")
+            return True
+
+        return False
+
+    except Exception as e:
+        print(f"Error memproses {putusan_url}: {e}")
+        return False
+def main():
+    base_url = "https://putusan3.mahkamahagung.go.id/direktori/index/pengadilan/pn-bandung/kategori/pidana-umum-1"
+
+    # 1. Ambil semua link putusan
+    links = get_all_links(base_url, 1, 5)
+    print(f"Total {len(links)} putusan ditemukan.")
+
+    # 2. Proses setiap putusan
+    for idx, link in enumerate(links):
+        print(f"{idx + 1}. ", end="")
+        result = process_putusan(link)
+
+        # if result == None:
+        #   break
+
+        time.sleep(2)  # Delay untuk hindari rate limiting
+
+if __name__ == "__main__":
+    main()
