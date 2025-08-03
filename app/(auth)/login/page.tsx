@@ -1,24 +1,27 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Eye, EyeOff } from 'lucide-react'
+import { useActionState, useState } from "react";
+import Link from "next/link";
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Eye, EyeOff } from "lucide-react";
+import { login } from "./actions";
 
 export default function LoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Handle login logic here
-    console.log('Login:', { email, password })
-  }
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [state, loginAction] = useActionState(login, undefined);
 
   return (
     <div className="min-h-screen bg-white flex items-center justify-center p-4">
@@ -40,7 +43,7 @@ export default function LoginPage() {
               Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleSubmit}>
+          <form action={loginAction}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-black font-medium">
@@ -49,12 +52,15 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
+                  name="email"
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="border-2 border-gray-300 focus:border-black transition-colors"
-                  required
                 />
+                {state?.errors?.email && (
+                  <p className="text-red-500 text-sm">{state.errors.email}</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-black font-medium">
@@ -63,12 +69,12 @@ export default function LoginPage() {
                 <div className="relative">
                   <Input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? "text" : "password"}
+                    name="password"
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="border-2 border-gray-300 focus:border-black transition-colors pr-10"
-                    required
                   />
                   <button
                     type="button"
@@ -77,6 +83,11 @@ export default function LoginPage() {
                   >
                     {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                   </button>
+                  {state?.errors?.password && (
+                    <p className="text-red-500 text-sm">
+                      {state.errors.password}
+                    </p>
+                  )}
                 </div>
               </div>
               <div className="flex justify-end">
@@ -96,8 +107,11 @@ export default function LoginPage() {
                 Sign In
               </Button>
               <p className="text-center text-sm text-gray-600">
-                Don't have an account?{' '}
-                <Link href="/register" className="text-black hover:underline font-medium">
+                Don&apos;t have an account?{" "}
+                <Link
+                  href="/register"
+                  className="text-black hover:underline font-medium"
+                >
                   Sign up
                 </Link>
               </p>
@@ -106,5 +120,5 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
