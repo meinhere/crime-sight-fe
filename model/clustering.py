@@ -6,7 +6,6 @@ import pandas as pd
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import MinMaxScaler
 from supabase import create_client
-from datetime import datetime
 import os
 from dotenv import load_dotenv
 load_dotenv()  # take environment variables

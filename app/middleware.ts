@@ -1,16 +1,31 @@
-// middleware.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { getSession } from "@/lib/session";
 
-export function middleware() {
-  const response = NextResponse.next();
-  response.headers.set("Access-Control-Allow-Origin", "*");
-  response.headers.set(
-    "Access-Control-Allow-Methods",
-    "GET,POST,PUT,DELETE,OPTIONS"
-  );
-  response.headers.set(
-    "Access-Control-Allow-Headers",
-    "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
-  );
-  return response;
+const protectedRoutes = ["/dashboard"];
+const publicRoutes = ["/login", "/register"];
+
+export default async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  const isProtectedRoutes = protectedRoutes.includes(path);
+  const isPublicRoutes = publicRoutes.includes(path);
+
+  const session = await getSession();
+  const { role } = session;
+
+  if (isProtectedRoutes && !session.id) {
+    return NextResponse.redirect("/login");
+  }
+
+  if (isPublicRoutes && session.id) {
+    if (role == "admin") {
+      return NextResponse.redirect("/dashboard");
+    }
+    return NextResponse.redirect("/");
+  }
+
+  if (isProtectedRoutes && role !== "admin") {
+    return NextResponse.redirect("/");
+  }
+
+  return NextResponse.next();
 }
