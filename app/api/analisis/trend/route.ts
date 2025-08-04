@@ -436,10 +436,6 @@ export async function GET(request: Request) {
               tertinggi: yearStats.tertinggi,
               terendah: yearStats.terendah,
               rata_rata: yearStats.rata_rata,
-              data_tahun: labels.map((year, index) => ({
-                tahun: year,
-                jumlah: casesByYear[index],
-              })),
             },
             jenis_kejahatan: {
               tertinggi: typeStats.tertinggi,
@@ -468,6 +464,7 @@ export async function GET(request: Request) {
           },
         },
         data: {
+          tahun: casesByYear,
           jenis_kejahatan: jenisKejahatanDatasets,
           waktu_kejadian: waktuKejadianDatasets,
           lokasi_kejadian: lokasiKejadianDatasets,

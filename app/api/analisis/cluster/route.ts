@@ -4,7 +4,7 @@ export async function GET(request: Request) {
   try {
     // Forward request to FastAPI backend
     const url = process.env.FASTAPI_URL || "http://127.0.0.1:8000";
-    const apiUrl = url + "/api/crime-clusters";
+    const apiUrl = url + "/api/cluster";
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams.entries());
     const queryString = new URLSearchParams(queryParams).toString();
@@ -18,8 +18,14 @@ export async function GET(request: Request) {
     });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error);
+      const res = await response.json();
+      return NextResponse.json(
+        {
+          message: "Failed to fetch data from FastAPI",
+          detail: res.detail || "Unknown error",
+        },
+        { status: response.status }
+      );
     }
 
     const data = await response.json();
@@ -28,8 +34,8 @@ export async function GET(request: Request) {
     console.error("API error:", error);
     return NextResponse.json(
       {
-        error: "Terjadi kesalahan server",
-        message: "Internal server error: ",
+        message: "Terjadi kesalahan server",
+        detail: "Internal server error: ",
       },
       { status: 500 }
     );
