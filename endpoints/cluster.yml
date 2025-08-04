@@ -218,7 +218,10 @@ components:
             $ref: "#/components/schemas/CrimeClusterItem"
           description: Array hasil clustering dengan informasi level kejahatan per wilayah
         meta:
-          $ref: "#/components/schemas/ClusteringMeta"
+          type: object
+          items:
+            $ref: "#/components/schemas/ClusteringMeta"
+          description: Metadata tentang hasil clustering, termasuk total record dan filter yang diterapkan
       required:
         - data
         - meta
@@ -228,7 +231,7 @@ components:
       properties:
         name:
           type: string
-          description: Nama wilayah (kode provinsi atau nama kabupaten tergantung filter)
+          description: Nama wilayah (nama kabupaten tiap provinsi di Indonesia)
           example: "35"
         count:
           type: integer
