@@ -301,7 +301,7 @@ export function IndonesiaCrimeMap({
         return <div className="h-full w-full bg-gray-100 flex items-center justify-center">Memuat peta...</div>;
     }
 
-    
+
 
     return (
         <div className="h-full w-full min-h-[400px]">

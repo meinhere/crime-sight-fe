@@ -16,16 +16,20 @@ export const crimeTypeOptions = [
     { value: 'penculikan', label: 'Penculikan' }
 ]
 
-// Period options - based on available years
+// ✅ Period options - Updated with more recent years and better range
 export const periodOptions = [
     { value: 'all', label: 'Semua Tahun' },
+    { value: '2025', label: '2025' },
     { value: '2024', label: '2024' },
     { value: '2023', label: '2023' },
     { value: '2022', label: '2022' },
     { value: '2021', label: '2021' },
     { value: '2020', label: '2020' },
     { value: '2019', label: '2019' },
-    { value: '2018', label: '2018' }
+    { value: '2018', label: '2018' },
+    { value: '2017', label: '2017' },
+    { value: '2016', label: '2016' },
+    { value: '2015', label: '2015' }
 ]
 
 // Region options - generated from real province data

@@ -29,6 +29,16 @@ const IndonesiaCrimeMap = dynamic(() =>
     )
 })
 
+// ✅ Move utility function OUTSIDE component or at the TOP
+const mapApiLevelToComponent = (apiLevel: string): 'high' | 'medium' | 'low' => {
+    switch (apiLevel) {
+        case 'Tinggi': return 'high'
+        case 'Sedang': return 'medium'
+        case 'Rendah': return 'low'
+        default: return 'medium'
+    }
+}
+
 export default function CriminalMapsPage() {
     const [selectedCrimeType, setSelectedCrimeType] = useState('all')
     const [selectedPeriod, setSelectedPeriod] = useState('all')
@@ -52,9 +62,12 @@ export default function CriminalMapsPage() {
         try {
             const params = new URLSearchParams()
 
+            // ✅ Add tahun filter
             if (filters.tahun) {
                 params.append('tahun', filters.tahun.toString())
             }
+
+            // ✅ Add provinsi filter
             if (filters.provinsi && filters.provinsi !== 'all') {
                 params.append('provinsi', filters.provinsi)
             }
@@ -79,7 +92,9 @@ export default function CriminalMapsPage() {
                     ? PROVINCE_CODE_MAP[filters.provinsi]
                     : 'Indonesia'
 
-                toast.success(`Data ${provinceName} berhasil dimuat`, {
+                const yearInfo = filters.tahun ? ` tahun ${filters.tahun}` : ''
+
+                toast.success(`Data ${provinceName}${yearInfo} berhasil dimuat`, {
                     description: `${data.data.length} kabupaten/kota berhasil dimuat`,
                 })
             }
@@ -142,6 +157,7 @@ export default function CriminalMapsPage() {
 
         const filters: ClusterFilters = {}
 
+        // ✅ Add tahun filter
         if (selectedPeriod !== 'all') {
             const year = parseInt(selectedPeriod)
             if (!isNaN(year)) {
@@ -149,37 +165,33 @@ export default function CriminalMapsPage() {
             }
         }
 
+        // ✅ Add provinsi filter
         if (selectedRegion !== 'all') {
             filters.provinsi = selectedRegion
         }
 
         console.log('🔄 Filters changed:', filters)
         console.log('🏛️ Selected Province:', PROVINCE_CODE_MAP[selectedRegion] || 'All Indonesia')
+        console.log('📅 Selected Year:', selectedPeriod !== 'all' ? selectedPeriod : 'All Years')
+
         fetchClusterData(filters)
     }, [selectedCrimeType, selectedPeriod, selectedRegion, isFirstLoad])
 
-    // Convert API level to component format
-    const mapApiLevelToComponent = (apiLevel: string): 'high' | 'medium' | 'low' => {
-        switch (apiLevel) {
-            case 'Tinggi': return 'high'
-            case 'Sedang': return 'medium'
-            case 'Rendah': return 'low'
-            default: return 'medium'
-        }
-    }
-
-    // Transform API data to component format
+    // ✅ Safe fallback for normalized_count - NOW mapApiLevelToComponent is available
     const transformedDistricts = useMemo(() => {
         if (!clusterData?.data) return []
 
         console.log('🔄 Transforming API data:', {
             totalItems: clusterData.data.length,
             selectedRegion,
+            selectedPeriod,
             provinceName: PROVINCE_CODE_MAP[selectedRegion] || 'All Indonesia',
+            filters: clusterData.meta.filters,
             sampleData: clusterData.data.slice(0, 3).map(item => ({
                 name: item.name,
                 level: item.level,
-                count: item.count
+                count: item.count,
+                normalized_count: item.normalized_count
             }))
         })
 
@@ -189,8 +201,9 @@ export default function CriminalMapsPage() {
                 name: item.name,
                 position: [0, 0] as [number, number],
                 totalCases: item.count,
-                dangerLevel: mapApiLevelToComponent(item.level),
-                normalized_count: item.normalized_count,
+                dangerLevel: mapApiLevelToComponent(item.level), // ✅ Now this works!
+                // ✅ Safe handling for normalized_count
+                normalized_count: typeof item.normalized_count === 'number' ? item.normalized_count : 0,
                 provinsi_kode: selectedRegion !== 'all' ? selectedRegion : undefined,
                 crimeTypes: {
                     korupsi: selectedCrimeType === 'korupsi' ? item.count : Math.floor(item.count * 0.15),
@@ -205,7 +218,17 @@ export default function CriminalMapsPage() {
 
             return district
         })
-    }, [clusterData, selectedCrimeType, selectedRegion])
+    }, [clusterData, selectedCrimeType, selectedRegion, selectedPeriod])
+
+    // ✅ REMOVE this duplicate function declaration - it's now at the top
+    // const mapApiLevelToComponent = (apiLevel: string): 'high' | 'medium' | 'low' => {
+    //     switch (apiLevel) {
+    //         case 'Tinggi': return 'high'
+    //         case 'Sedang': return 'medium'
+    //         case 'Rendah': return 'low'
+    //         default: return 'medium'
+    //     }
+    // }
 
     // Get selected province info for display
     const selectedProvinceInfo = useMemo(() => {
@@ -222,6 +245,7 @@ export default function CriminalMapsPage() {
             parts.push(`Jenis: ${crimeLabel}`)
         }
 
+        // ✅ Show tahun filter in description
         if (selectedPeriod !== 'all') {
             parts.push(`Tahun: ${selectedPeriod}`)
         }
@@ -270,6 +294,12 @@ export default function CriminalMapsPage() {
                                         - {selectedProvinceInfo.nama_provinsi}
                                     </span>
                                 )}
+                                {/* ✅ Show selected year in title */}
+                                {selectedPeriod !== 'all' && (
+                                    <span className="text-base font-normal text-blue-600 ml-2">
+                                        ({selectedPeriod})
+                                    </span>
+                                )}
                             </h1>
                             <p className="text-xs md:text-sm text-gray-600 mt-1">
                                 {selectedRegion === 'all'
@@ -282,6 +312,13 @@ export default function CriminalMapsPage() {
                                     <p className="text-xs text-gray-500">
                                         Total Records: {clusterData.meta.total_records} |
                                         Districts Loaded: {transformedDistricts.length}
+                                        {/* ✅ Show API filters info */}
+                                        {clusterData.meta.filters && (
+                                            <>
+                                                {clusterData.meta.filters.tahun && ` | Tahun: ${clusterData.meta.filters.tahun}`}
+                                                {clusterData.meta.filters.provinsi && ` | Provinsi: ${clusterData.meta.filters.provinsi}`}
+                                            </>
+                                        )}
                                     </p>
                                 )}
                                 {filterDescription && (
@@ -313,6 +350,8 @@ export default function CriminalMapsPage() {
                                 onPeriodChange={setSelectedPeriod}
                                 onRegionChange={setSelectedRegion}
                                 disableCrimeType={true}
+                                // ✅ Enable tahun filter
+                                disablePeriod={false}
                             />
                         </div>
 
@@ -339,6 +378,8 @@ export default function CriminalMapsPage() {
                                 onPeriodChange={setSelectedPeriod}
                                 onRegionChange={setSelectedRegion}
                                 disableCrimeType={true}
+                                // ✅ Enable tahun filter for mobile too
+                                disablePeriod={false}
                             />
                         </div>
                     )}
@@ -356,6 +397,12 @@ export default function CriminalMapsPage() {
                                         `Memuat data ${selectedProvinceInfo.nama_provinsi}...` :
                                         "Memuat data peta..."
                                     }
+                                    {/* ✅ Show year in loading message */}
+                                    {selectedPeriod !== 'all' && (
+                                        <span className="block text-sm text-gray-500 mt-1">
+                                            Tahun {selectedPeriod}
+                                        </span>
+                                    )}
                                 </p>
                             </div>
                         </div>
@@ -404,6 +451,10 @@ export default function CriminalMapsPage() {
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="font-semibold text-black text-lg">
                                         Statistik {selectedProvinceInfo ? selectedProvinceInfo.nama_provinsi : 'Indonesia'}
+                                        {/* ✅ Show year in mobile stats title */}
+                                        {selectedPeriod !== 'all' && (
+                                            <span className="text-sm text-blue-600 ml-2">({selectedPeriod})</span>
+                                        )}
                                     </h3>
                                     <button
                                         onClick={() => setShowStats(false)}
