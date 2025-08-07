@@ -1,22 +1,18 @@
+// data/filter-options.ts - Update dengan dummy data
 import { provinsi } from './provinsi'
 
-// Crime type options - dummy data for now since API doesn't support filtering yet
+// ✅ Crime type options - menggunakan data dummy sesuai permintaan
 export const crimeTypeOptions = [
     { value: 'all', label: 'Semua Jenis Kejahatan' },
-    { value: 'korupsi', label: 'Korupsi' },
     { value: 'pencurian', label: 'Pencurian' },
-    { value: 'narkoba', label: 'Narkoba' },
-    { value: 'penipuan', label: 'Penipuan' },
-    { value: 'pembunuhan', label: 'Pembunuhan' },
-    { value: 'pemerkosaan', label: 'Pemerkosaan' },
-    { value: 'penggelapan', label: 'Penggelapan' },
-    { value: 'kekerasan', label: 'Kekerasan' },
     { value: 'penganiayaan', label: 'Penganiayaan' },
-    { value: 'perampokan', label: 'Perampokan' },
-    { value: 'penculikan', label: 'Penculikan' }
+    { value: 'pembunuhan', label: 'Pembunuhan' },
+    { value: 'penghinaan', label: 'Penghinaan' },
+    { value: 'penipuan', label: 'Penipuan' },
+    { value: 'perlindungan_anak', label: 'Perlindungan Anak' }
 ]
 
-// ✅ Period options - Updated with more recent years and better range
+// Period options
 export const periodOptions = [
     { value: 'all', label: 'Semua Tahun' },
     { value: '2025', label: '2025' },
@@ -51,17 +47,22 @@ export const getProvinsiName = (kode: string) => {
     return prov ? prov.nama_provinsi : kode
 }
 
-// Crime type mapping for API calls (when API supports it)
-export const crimeTypeApiMapping: { [key: string]: string } = {
-    'korupsi': 'Korupsi',
-    'pencurian': 'Pencurian',
-    'narkoba': 'Narkoba',
-    'penipuan': 'Penipuan',
-    'pembunuhan': 'Pembunuhan',
-    'pemerkosaan': 'Pemerkosaan',
-    'penggelapan': 'Penggelapan',
-    'kekerasan': 'Kekerasan',
-    'penganiayaan': 'Penganiayaan',
-    'perampokan': 'Perampokan',
-    'penculikan': 'Penculikan'
+// ✅ Helper function to get crime type label
+export const getCrimeTypeLabel = (value: string): string => {
+    const option = crimeTypeOptions.find(opt => opt.value === value)
+    return option?.label || value
+}
+
+// ✅ Helper function to convert filter value to API format
+export const getCrimeTypeForAPI = (value: string): string => {
+    const mapping: Record<string, string> = {
+        'pencurian': 'Pencurian',
+        'penganiayaan': 'Penganiayaan',
+        'pembunuhan': 'Pembunuhan',
+        'penghinaan': 'Penghinaan',
+        'penipuan': 'Penipuan',
+        'perlindungan_anak': 'Perlindungan Anak'
+    }
+
+    return mapping[value] || value
 }

@@ -1,3 +1,4 @@
+// app/(public)/criminal-maps/page.tsx
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
@@ -15,7 +16,7 @@ import { CrimeTimeChart } from '@/components/crime-time-chart'
 import { CrimeLocationList } from '@/components/crime-location-list'
 import { MapLoading } from '@/components/map-loading'
 import type { ApiClusterResponse, ClusterFilters, District } from '@/types/api'
-import { getProvinsiByKode } from '@/data/filter-options'
+import { getProvinsiByKode, getCrimeTypeForAPI, getCrimeTypeLabel } from '@/data/filter-options'
 import { API_CONFIG, LOADING_MESSAGES, ERROR_MESSAGES, PROVINCE_CODE_MAP } from '@/data/constants'
 
 const IndonesiaCrimeMap = dynamic(() =>
@@ -52,7 +53,7 @@ export default function CriminalMapsPage() {
     const [mapLoading, setMapLoading] = useState(false) // Only for map overlay
     const [isFirstLoad, setIsFirstLoad] = useState(true) // Track very first load
 
-    // Fetch cluster data from API
+    // ✅ Updated fetch function with jenis_kejahatan parameter
     const fetchClusterData = async (filters: ClusterFilters = {}, showLoadingOverlay = true) => {
         // Show map overlay loading for filter changes (not first load)
         if (!isFirstLoad && showLoadingOverlay) {
@@ -61,6 +62,11 @@ export default function CriminalMapsPage() {
 
         try {
             const params = new URLSearchParams()
+
+            // ✅ Add jenis_kejahatan filter
+            if (filters.jenis_kejahatan && filters.jenis_kejahatan !== 'all') {
+                params.append('jenis_kejahatan', filters.jenis_kejahatan)
+            }
 
             // ✅ Add tahun filter
             if (filters.tahun) {
@@ -88,13 +94,22 @@ export default function CriminalMapsPage() {
 
             // Show success toast only for filter changes, not initial load
             if (!isFirstLoad) {
+                const crimeTypeLabel = filters.jenis_kejahatan && filters.jenis_kejahatan !== 'all'
+                    ? getCrimeTypeLabel(selectedCrimeType)
+                    : null
+
                 const provinceName = filters.provinsi && filters.provinsi !== 'all'
                     ? PROVINCE_CODE_MAP[filters.provinsi]
                     : 'Indonesia'
 
                 const yearInfo = filters.tahun ? ` tahun ${filters.tahun}` : ''
 
-                toast.success(`Data ${provinceName}${yearInfo} berhasil dimuat`, {
+                const filterInfo = [
+                    crimeTypeLabel,
+                    `${provinceName}${yearInfo}`
+                ].filter(Boolean).join(' - ')
+
+                toast.success(`Data ${filterInfo} berhasil dimuat`, {
                     description: `${data.data.length} kabupaten/kota berhasil dimuat`,
                 })
             }
@@ -150,12 +165,17 @@ export default function CriminalMapsPage() {
         fetchClusterData()
     }, [])
 
-    // Refetch when filters change
+    // ✅ Updated useEffect for filter changes with jenis_kejahatan
     useEffect(() => {
         // Skip if this is the very first load
         if (isFirstLoad) return
 
         const filters: ClusterFilters = {}
+
+        // ✅ Add jenis_kejahatan filter
+        if (selectedCrimeType !== 'all') {
+            filters.jenis_kejahatan = getCrimeTypeForAPI(selectedCrimeType)
+        }
 
         // ✅ Add tahun filter
         if (selectedPeriod !== 'all') {
@@ -171,6 +191,7 @@ export default function CriminalMapsPage() {
         }
 
         console.log('🔄 Filters changed:', filters)
+        console.log('🔍 Selected Crime Type:', selectedCrimeType, '→', getCrimeTypeForAPI(selectedCrimeType))
         console.log('🏛️ Selected Province:', PROVINCE_CODE_MAP[selectedRegion] || 'All Indonesia')
         console.log('📅 Selected Year:', selectedPeriod !== 'all' ? selectedPeriod : 'All Years')
 
@@ -183,6 +204,7 @@ export default function CriminalMapsPage() {
 
         console.log('🔄 Transforming API data:', {
             totalItems: clusterData.data.length,
+            selectedCrimeType,
             selectedRegion,
             selectedPeriod,
             provinceName: PROVINCE_CODE_MAP[selectedRegion] || 'All Indonesia',
@@ -201,7 +223,7 @@ export default function CriminalMapsPage() {
                 name: item.name,
                 position: [0, 0] as [number, number],
                 totalCases: item.count,
-                dangerLevel: mapApiLevelToComponent(item.level), // ✅ Now this works!
+                dangerLevel: mapApiLevelToComponent(item.level),
                 // ✅ Safe handling for normalized_count
                 normalized_count: typeof item.normalized_count === 'number' ? item.normalized_count : 0,
                 provinsi_kode: selectedRegion !== 'all' ? selectedRegion : undefined,
@@ -220,32 +242,20 @@ export default function CriminalMapsPage() {
         })
     }, [clusterData, selectedCrimeType, selectedRegion, selectedPeriod])
 
-    // ✅ REMOVE this duplicate function declaration - it's now at the top
-    // const mapApiLevelToComponent = (apiLevel: string): 'high' | 'medium' | 'low' => {
-    //     switch (apiLevel) {
-    //         case 'Tinggi': return 'high'
-    //         case 'Sedang': return 'medium'
-    //         case 'Rendah': return 'low'
-    //         default: return 'medium'
-    //     }
-    // }
-
     // Get selected province info for display
     const selectedProvinceInfo = useMemo(() => {
         if (selectedRegion === 'all') return null
         return getProvinsiByKode(selectedRegion)
     }, [selectedRegion])
 
-    // Get current filter description
+    // ✅ Updated filter description to include crime type
     const filterDescription = useMemo(() => {
         const parts = []
 
         if (selectedCrimeType !== 'all') {
-            const crimeLabel = selectedCrimeType.charAt(0).toUpperCase() + selectedCrimeType.slice(1)
-            parts.push(`Jenis: ${crimeLabel}`)
+            parts.push(`Jenis: ${getCrimeTypeLabel(selectedCrimeType)}`)
         }
 
-        // ✅ Show tahun filter in description
         if (selectedPeriod !== 'all') {
             parts.push(`Tahun: ${selectedPeriod}`)
         }
@@ -300,6 +310,12 @@ export default function CriminalMapsPage() {
                                         ({selectedPeriod})
                                     </span>
                                 )}
+                                {/* ✅ Show selected crime type in title */}
+                                {selectedCrimeType !== 'all' && (
+                                    <span className="text-sm font-normal text-green-600 ml-2">
+                                        - {getCrimeTypeLabel(selectedCrimeType)}
+                                    </span>
+                                )}
                             </h1>
                             <p className="text-xs md:text-sm text-gray-600 mt-1">
                                 {selectedRegion === 'all'
@@ -315,6 +331,7 @@ export default function CriminalMapsPage() {
                                         {/* ✅ Show API filters info */}
                                         {clusterData.meta.filters && (
                                             <>
+                                                {clusterData.meta.filters.jenis_kejahatan && ` | Jenis: ${clusterData.meta.filters.jenis_kejahatan}`}
                                                 {clusterData.meta.filters.tahun && ` | Tahun: ${clusterData.meta.filters.tahun}`}
                                                 {clusterData.meta.filters.provinsi && ` | Provinsi: ${clusterData.meta.filters.provinsi}`}
                                             </>
@@ -349,8 +366,7 @@ export default function CriminalMapsPage() {
                                 onCrimeTypeChange={setSelectedCrimeType}
                                 onPeriodChange={setSelectedPeriod}
                                 onRegionChange={setSelectedRegion}
-                                disableCrimeType={true}
-                                // ✅ Enable tahun filter
+                                disableCrimeType={false} // ✅ Enable crime type filter
                                 disablePeriod={false}
                             />
                         </div>
@@ -377,8 +393,7 @@ export default function CriminalMapsPage() {
                                 onCrimeTypeChange={setSelectedCrimeType}
                                 onPeriodChange={setSelectedPeriod}
                                 onRegionChange={setSelectedRegion}
-                                disableCrimeType={true}
-                                // ✅ Enable tahun filter for mobile too
+                                disableCrimeType={false} // ✅ Enable for mobile too
                                 disablePeriod={false}
                             />
                         </div>
@@ -397,10 +412,12 @@ export default function CriminalMapsPage() {
                                         `Memuat data ${selectedProvinceInfo.nama_provinsi}...` :
                                         "Memuat data peta..."
                                     }
-                                    {/* ✅ Show year in loading message */}
-                                    {selectedPeriod !== 'all' && (
+                                    {/* ✅ Show crime type and year in loading message */}
+                                    {(selectedCrimeType !== 'all' || selectedPeriod !== 'all') && (
                                         <span className="block text-sm text-gray-500 mt-1">
-                                            Tahun {selectedPeriod}
+                                            {selectedCrimeType !== 'all' && getCrimeTypeLabel(selectedCrimeType)}
+                                            {selectedCrimeType !== 'all' && selectedPeriod !== 'all' && ' - '}
+                                            {selectedPeriod !== 'all' && `Tahun ${selectedPeriod}`}
                                         </span>
                                     )}
                                 </p>
@@ -417,11 +434,13 @@ export default function CriminalMapsPage() {
                         loading={false}
                     />
 
-                    {/* Desktop Stats & Legend - Always Show */}
                     <div className="hidden lg:block">
                         <CrimeMapStats
                             districts={transformedDistricts}
                             selectedCrimeType={selectedCrimeType}
+                            selectedPeriod={selectedPeriod}
+                            selectedRegion={selectedRegion}
+                            selectedProvinceName={selectedProvinceInfo?.nama_provinsi}
                         />
                         <CrimeMapLegend />
                     </div>
@@ -451,7 +470,10 @@ export default function CriminalMapsPage() {
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="font-semibold text-black text-lg">
                                         Statistik {selectedProvinceInfo ? selectedProvinceInfo.nama_provinsi : 'Indonesia'}
-                                        {/* ✅ Show year in mobile stats title */}
+                                        {/* ✅ Show crime type and year in mobile stats title */}
+                                        {selectedCrimeType !== 'all' && (
+                                            <span className="text-sm text-green-600 ml-2">- {getCrimeTypeLabel(selectedCrimeType)}</span>
+                                        )}
                                         {selectedPeriod !== 'all' && (
                                             <span className="text-sm text-blue-600 ml-2">({selectedPeriod})</span>
                                         )}
@@ -466,6 +488,9 @@ export default function CriminalMapsPage() {
                                 <CrimeMapStats
                                     districts={transformedDistricts}
                                     selectedCrimeType={selectedCrimeType}
+                                    selectedPeriod={selectedPeriod}
+                                    selectedRegion={selectedRegion}
+                                    selectedProvinceName={selectedProvinceInfo?.nama_provinsi}
                                     isMobile={true}
                                 />
                             </div>
