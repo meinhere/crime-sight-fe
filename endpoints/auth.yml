@@ -1,0 +1,573 @@
+openapi: 3.0.3
+info:
+  title: Crime Analysis Authentication API
+  description: API untuk autentikasi pengguna sistem analisis kejahatan
+  version: 1.0.0
+  contact:
+    name: Crime Analysis Team
+    email: support@crime-analysis.com
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://your-production-domain.com
+    description: Production server
+
+paths:
+  /api/auth/login:
+    options:
+      tags:
+        - Authentication
+      summary: Handle CORS preflight request for login
+      description: Handles CORS preflight requests for the login endpoint
+      responses:
+        "200":
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+                example: "*"
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+                example: "POST, OPTIONS"
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                example: "Content-Type, Authorization"
+
+    post:
+      tags:
+        - Authentication
+      summary: User login
+      description: |
+        Endpoint untuk autentikasi pengguna. Validasi kredensial dan mengembalikan token atau session.
+
+        **Validasi:**
+        - Email harus format yang valid
+        - Password minimal 6 karakter
+
+        **Response:**
+        - Sukses: Token JWT atau session cookie
+        - Gagal: Error message dengan detail kesalahan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            examples:
+              valid_login:
+                summary: Valid login credentials
+                value:
+                  email: "admin@crime-analysis.com"
+                  password: "password123"
+              invalid_email:
+                summary: Invalid email format
+                value:
+                  email: "invalid-email"
+                  password: "password123"
+              short_password:
+                summary: Password too short
+                value:
+                  email: "user@example.com"
+                  password: "123"
+      responses:
+        "200":
+          description: Login successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: "session=abc123; HttpOnly; Secure; SameSite=Strict"
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+                example: "*"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginSuccessResponse"
+              examples:
+                successful_login:
+                  summary: Successful login
+                  value:
+                    success: true
+                    message: "Login berhasil"
+                    user:
+                      id: "user_123"
+                      email: "admin@crime-analysis.com"
+                      name: "Admin User"
+                      role: "admin"
+                    token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    expires_at: "2024-08-08T10:30:00Z"
+        "400":
+          description: Bad request - Validation errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+              examples:
+                validation_error:
+                  summary: Validation errors
+                  value:
+                    success: false
+                    errors:
+                      email: ["Invalid email format"]
+                      password: ["Password must be at least 6 characters"]
+                missing_fields:
+                  summary: Missing required fields
+                  value:
+                    success: false
+                    errors: "Email dan password wajib diisi"
+        "401":
+          description: Unauthorized - Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                invalid_credentials:
+                  summary: Invalid email or password
+                  value:
+                    success: false
+                    error: "Email atau password salah"
+                account_locked:
+                  summary: Account locked
+                  value:
+                    success: false
+                    error: "Akun terkunci. Silakan hubungi administrator"
+        "429":
+          description: Too many requests - Rate limiting
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                rate_limit:
+                  summary: Too many login attempts
+                  value:
+                    success: false
+                    error: "Terlalu banyak percobaan login. Coba lagi dalam 15 menit"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/register:
+    options:
+      tags:
+        - Authentication
+      summary: Handle CORS preflight request for register
+      description: Handles CORS preflight requests for the register endpoint
+      responses:
+        "200":
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+                example: "*"
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+                example: "POST, OPTIONS"
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+                example: "Content-Type, Authorization"
+
+    post:
+      tags:
+        - Authentication
+      summary: User registration
+      description: |
+        Endpoint untuk registrasi pengguna baru. Membuat akun pengguna dengan validasi lengkap.
+
+        **Validasi:**
+        - Email harus format yang valid dan belum terdaftar
+        - Password minimal 8 karakter, harus mengandung huruf dan angka
+        - Nama minimal 2 karakter
+        - Confirm password harus sama dengan password
+
+        **Default Role:** user (admin role hanya bisa dibuat oleh admin lain)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+            examples:
+              valid_registration:
+                summary: Valid registration data
+                value:
+                  name: "John Doe"
+                  email: "john.doe@example.com"
+                  password: "password123"
+                  confirmPassword: "password123"
+                  role: "user"
+              admin_registration:
+                summary: Admin registration (requires admin privileges)
+                value:
+                  name: "Admin User"
+                  email: "admin@crime-analysis.com"
+                  password: "admin123456"
+                  confirmPassword: "admin123456"
+                  role: "admin"
+      responses:
+        "201":
+          description: Registration successful
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+                example: "*"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegisterSuccessResponse"
+              examples:
+                successful_registration:
+                  summary: Successful registration
+                  value:
+                    success: true
+                    message: "Registrasi berhasil. Silakan login untuk melanjutkan"
+                    user:
+                      id: "user_456"
+                      email: "john.doe@example.com"
+                      name: "John Doe"
+                      role: "user"
+                      created_at: "2024-08-08T09:15:00Z"
+        "400":
+          description: Bad request - Validation errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+              examples:
+                validation_errors:
+                  summary: Multiple validation errors
+                  value:
+                    success: false
+                    errors:
+                      email: ["Invalid email format"]
+                      password:
+                        [
+                          "Password must be at least 8 characters",
+                          "Password must contain letters and numbers",
+                        ]
+                      confirmPassword: ["Passwords do not match"]
+                      name: ["Name must be at least 2 characters"]
+                password_mismatch:
+                  summary: Password confirmation mismatch
+                  value:
+                    success: false
+                    errors:
+                      confirmPassword: ["Password confirmation does not match"]
+        "409":
+          description: Conflict - Email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                email_exists:
+                  summary: Email already registered
+                  value:
+                    success: false
+                    error: "Email sudah terdaftar. Silakan gunakan email lain atau login"
+        "403":
+          description: Forbidden - Insufficient privileges for admin role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                admin_creation_forbidden:
+                  summary: Cannot create admin account
+                  value:
+                    success: false
+                    error: "Hanya admin yang dapat membuat akun admin baru"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/logout:
+    options:
+      tags:
+        - Authentication
+      summary: Handle CORS preflight request for logout
+      description: Handles CORS preflight requests for the logout endpoint
+      responses:
+        "200":
+          description: CORS preflight response
+
+    post:
+      tags:
+        - Authentication
+      summary: User logout
+      description: |
+        Endpoint untuk logout pengguna. Menghapus session/token dan membersihkan cookie.
+
+        **Aksi yang dilakukan:**
+        - Menghapus session dari database (jika menggunakan session-based auth)
+        - Menghapus cookie autentikasi
+        - Invalidate JWT token (jika menggunakan JWT)
+      security:
+        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: Logout successful
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: "session=; expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly"
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+                example: "*"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutResponse"
+              examples:
+                successful_logout:
+                  summary: Successful logout
+                  value:
+                    success: true
+                    message: "Logout berhasil"
+        "401":
+          description: Unauthorized - No valid session/token
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              examples:
+                no_session:
+                  summary: No active session
+                  value:
+                    success: false
+                    error: "Tidak ada sesi aktif"
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email pengguna
+          example: "admin@crime-analysis.com"
+        password:
+          type: string
+          minLength: 6
+          description: Password pengguna (minimal 6 karakter)
+          example: "password123"
+
+    RegisterRequest:
+      type: object
+      required:
+        - name
+        - email
+        - password
+        - confirmPassword
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Nama lengkap pengguna
+          example: "John Doe"
+        email:
+          type: string
+          format: email
+          description: Email pengguna (harus unik)
+          example: "john.doe@example.com"
+        password:
+          type: string
+          minLength: 8
+          pattern: '^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$'
+          description: Password (minimal 8 karakter, harus mengandung huruf dan angka)
+          example: "password123"
+        confirmPassword:
+          type: string
+          description: Konfirmasi password (harus sama dengan password)
+          example: "password123"
+        role:
+          type: string
+          enum: ["user", "admin"]
+          default: "user"
+          description: "Role pengguna (default: user)"
+          example: "user"
+
+    LoginSuccessResponse:
+      type: object
+      required:
+        - success
+        - message
+        - user
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Login berhasil"
+        user:
+          $ref: "#/components/schemas/UserProfile"
+        token:
+          type: string
+          description: JWT token (jika menggunakan JWT auth)
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        expires_at:
+          type: string
+          format: date-time
+          description: Waktu kadaluarsa token/session
+          example: "2024-08-08T10:30:00Z"
+
+    RegisterSuccessResponse:
+      type: object
+      required:
+        - success
+        - message
+        - user
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Registrasi berhasil. Silakan login untuk melanjutkan"
+        user:
+          allOf:
+            - $ref: "#/components/schemas/UserProfile"
+            - type: object
+              properties:
+                created_at:
+                  type: string
+                  format: date-time
+                  example: "2024-08-08T09:15:00Z"
+
+    LogoutResponse:
+      type: object
+      required:
+        - success
+        - message
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: "Logout berhasil"
+
+    UserProfile:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - role
+      properties:
+        id:
+          type: string
+          description: Unique identifier pengguna
+          example: "user_123"
+        email:
+          type: string
+          format: email
+          example: "admin@crime-analysis.com"
+        name:
+          type: string
+          example: "Admin User"
+        role:
+          type: string
+          enum: ["user", "admin"]
+          example: "admin"
+
+    ValidationErrorResponse:
+      type: object
+      required:
+        - success
+        - errors
+      properties:
+        success:
+          type: boolean
+          example: false
+        errors:
+          oneOf:
+            - type: string
+              description: Error message tunggal
+              example: "Email dan password wajib diisi"
+            - type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+              description: Error messages per field
+              example:
+                email: ["Invalid email format"]
+                password: ["Password must be at least 6 characters"]
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          description: Error message
+          example: "Email atau password salah"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token untuk autentikasi
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: session
+      description: Session cookie untuk autentikasi
+
+tags:
+  - name: Authentication
+    description: |
+      Endpoints untuk autentikasi dan manajemen pengguna.
+
+      **Jenis Autentikasi:**
+      - Session-based authentication dengan HTTP-only cookies
+      - JWT token authentication (opsional)
+
+      **Role-based Access:**
+      - **user**: Akses terbatas ke fitur publik
+      - **admin**: Akses penuh ke semua fitur termasuk manajemen pengguna
+
+      **Security Features:**
+      - Password hashing dengan bcrypt
+      - Rate limiting untuk login attempts
+      - CORS support
+      - Secure cookie settings
