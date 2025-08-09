@@ -520,8 +520,8 @@ export default function CriminalMapsPage() {
 
             {/* Chart Section - Always Show */}
             <div className="py-8">
-                <div className="max-w-7xl mx-auto space-y-8">
-                    <CrimeTrendChart />
+                <div className="mx-auto space-y-8">
+                    <CrimeTrendChart/>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <RegionalCases />
                         <CrimeTypeTrend />
