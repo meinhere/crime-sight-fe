@@ -125,7 +125,7 @@ export function CrimeTimeChart({ className }: CrimeTimeChartProps) {
             }
 
             const data: TrendsApiResponse = await response.json()
-            console.log('📊 Crime Time Chart API Response:', data)
+            console.log('  Crime Time Chart API Response:', data)
             setTrendsData(data)
 
             // Show success toast for filter changes (not initial load)

@@ -118,7 +118,7 @@ export function RegionalCases({ className }: RegionalCasesProps) {
             }
 
             const data: TrendsApiResponse = await response.json()
-            console.log('📊 Regional Cases API Response:', data)
+            console.log('  Regional Cases API Response:', data)
             setTrendsData(data)
 
             // Show success toast for filter changes (not initial load)

@@ -124,7 +124,7 @@ export function CrimeLocationList({ className }: CrimeLocationListProps) {
             }
 
             const data: TrendsApiResponse = await response.json()
-            console.log('📊 Crime Location List API Response:', data)
+            console.log('  Crime Location List API Response:', data)
             setTrendsData(data)
 
             // Show success toast for filter changes (not initial load)
