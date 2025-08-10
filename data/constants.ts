@@ -2,7 +2,10 @@ export const API_CONFIG = {
   BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000',
   ENDPOINTS: {
     CLUSTER: '/api/cluster',
-    TRENDS: '/api/trends'
+    TRENDS: '/api/trends',
+    MASTER_PROVINSI: '/api/master/provinsi',
+    MASTER_TAHUN: '/api/master/tahun',
+    MASTER_JENIS_KEJAHATAN: '/api/master/jenis-kejahatan'
   }
 } as const
 
