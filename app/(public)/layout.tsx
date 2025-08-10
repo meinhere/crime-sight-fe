@@ -1,5 +1,5 @@
-import { PublicNavbar } from '@/components/public-navbar'
 import { Footer } from '@/components/footer'
+import { PublicNavbar } from '@/components/public-navbar'
 
 export default function PublicLayout({
     children,
@@ -10,7 +10,7 @@ export default function PublicLayout({
         <div className="min-h-screen bg-[#f4f4f4]">
             <PublicNavbar />
             <main className="p-6">
-                <div className="container mx-auto rounded-lg p-6 min-h-[calc(100vh-200px)]">
+                <div className="container mx-auto rounded-lg min-h-[calc(100vh-200px)]">
                     {children}
                 </div>
             </main>
