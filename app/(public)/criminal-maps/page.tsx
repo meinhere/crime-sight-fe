@@ -88,7 +88,7 @@ export default function CriminalMapsPage() {
             }
 
             const data: ApiClusterResponse = await response.json()
-            console.log('📊 API Response:', data)
+            console.log('  API Response:', data)
             console.log('📋 Sample districts from API:', data.data.slice(0, 5))
             setClusterData(data)
 
@@ -521,7 +521,7 @@ export default function CriminalMapsPage() {
             {/* Chart Section - Always Show */}
             <div className="py-8">
                 <div className="mx-auto space-y-8">
-                    <CrimeTrendChart/>
+                    <CrimeTrendChart />
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <RegionalCases />
                         <CrimeTypeTrend />

@@ -57,7 +57,7 @@ export function CrimeTrendChart({ className }: CrimeTrendChartProps) {
             }
 
             const data: TrendApiResponse = await response.json()
-            console.log('📊 Trend API Response (All Data):', data)
+            console.log('  Trend API Response (All Data):', data)
             setTrendData(data)
 
             // Show success message on first load
@@ -239,7 +239,7 @@ export function CrimeTrendChart({ className }: CrimeTrendChartProps) {
                 {trendData && !loading && (
                     <div className="mt-3 p-3 bg-blue-50 rounded-lg border-l-4 border-blue-400">
                         <p className="text-sm text-blue-800">
-                            <span className="font-semibold">📊 Data Lengkap:</span> Seluruh Indonesia •
+                            <span className="font-semibold">  Data Lengkap:</span> Seluruh Indonesia •
                             Periode {trendData.meta.labels[0]} - {trendData.meta.labels[trendData.meta.labels.length - 1]} •
                             {trendData.meta.total_records.toLocaleString('id-ID')} total kasus
                         </p>
