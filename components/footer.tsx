@@ -21,7 +21,7 @@ export function Footer() {
                                 <h3 className="text-xl font-bold text-black">CrimeSight</h3>
                             </div>
                             <div className="space-y-2 text-sm text-gray-600 max-w-md">
-                                <p>Hukum Aja adalah platform informasi kriminal di Indonesia.</p>
+                                <p>CrimeSight adalah platform informasi kriminal di Indonesia.</p>
                                 <p>Kami berkomitmen menyajikan data yang akurat dan mudah dipahami.</p>
                             </div>
                         </div>
@@ -29,7 +29,7 @@ export function Footer() {
                         {/* Right Section - Copyright */}
                         <div className="text-right">
                             <p className="text-sm text-gray-500">
-                                © 2025 Hukum Aja. Semua fakta punya dampak.
+                                © 2025 CrimeSight. Semua fakta punya dampak.
                             </p>
                             <div className="flex flex-col sm:flex-row sm:justify-end gap-2 sm:gap-4 mt-3">
                                 <a href="#" className="text-sm text-gray-600 hover:text-black transition-colors">

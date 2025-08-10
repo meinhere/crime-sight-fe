@@ -110,7 +110,7 @@ export default function Home() {
                 {/* Card Template */}
                 {[
                   {
-                    icon: "📍",
+                    icon: " ",
                     title: "Visualisasi Kejahatan",
                     desc: "Lihat data kejahatan dalam bentuk peta interaktif dan grafik statistik. Cocok untuk riset, edukasi, dan pemahaman tren sosial.",
                   },
@@ -155,10 +155,10 @@ export default function Home() {
               <div className="flex justify-center gap-6 flex-wrap">
                 <button
                   onClick={() => {
-                  document
-                    .getElementById("fitur")
-                    ?.scrollIntoView({ behavior: "smooth" });
-                }}
+                    document
+                      .getElementById("fitur")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }}
                   className="px-8 py-3 bg-white text-black rounded-full font-semibold hover:bg-gray-300 transition"
                 >
                   Pelajari Lebih Lanjut

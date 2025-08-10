@@ -328,7 +328,7 @@ export function CrimeTypeTrend({ className }: CrimeTypeTrendProps) {
                         {/* ✅ Current filter info */}
                         <div className="mt-2 p-2 bg-blue-50 rounded-lg border-l-4 border-blue-400">
                             <p className="text-sm text-blue-800">
-                                <span className="font-medium">📍 Filter Aktif:</span> {getFilterDescription()}
+                                <span className="font-medium">  Filter Aktif:</span> {getFilterDescription()}
                                 {trendsData && (
                                     <span className="text-xs text-blue-600 ml-2">
                                         • {Object.keys(trendsData.meta.details.jenis_kejahatan).length} jenis kejahatan
