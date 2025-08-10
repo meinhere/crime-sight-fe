@@ -58,6 +58,7 @@ export function CrimeProvinceList({ className }: CrimeProvinceListProps) {
     0
   );
 
+
   return (
     <div
       className={`bg-white rounded-lg shadow-lg border border-gray-200 p-6 ${className}`}
@@ -92,7 +93,7 @@ export function CrimeProvinceList({ className }: CrimeProvinceListProps) {
           <span className="font-semibold text-black">Jumlah Kasus</span>
         </div>
 
-        <div className="max-h-80 overflow-y-auto space-y-2">
+        <div className="max-h-80 lg:max-h-[60vh] overflow-y-auto space-y-2">
           {locationData.map((location, index) => (
             <div
               key={location.name}
